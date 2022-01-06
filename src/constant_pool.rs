@@ -415,8 +415,20 @@ pub fn read_constants(bytes: &mut ByteReader) {
         ",
         constant_pool_count = constants_pool_count
     );
+    let mut skip: bool = false;
     for offset in 1..(constants_pool_count) {
+        if skip {
+            skip = false;
+            continue
+        }
         let tag = CpTag::try_from(bytes.take::<w1>()).ok().unwrap();
+
+        // Long and Double "swallow" another index
+        skip = match tag {
+            CpTag::Double | CpTag::Long => true,
+            _ => false
+        };
+
         let info = CpInfo::of(&tag, bytes);
         let constant = Constant(tag, info);
 
