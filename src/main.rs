@@ -1,6 +1,8 @@
+mod constant_pool;
 mod reader;
 mod typedefs;
 
+use crate::constant_pool::read_constants;
 use crate::reader::*;
 use crate::typedefs::*;
 use std::fs::read;
@@ -28,4 +30,5 @@ fn read_class_file(path: &Path) {
         minor = bytes.take::<w2>(),
         major = bytes.take::<w2>()
     );
+    read_constants(&mut bytes)
 }
