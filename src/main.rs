@@ -1,3 +1,4 @@
+mod access;
 mod constant_pool;
 mod reader;
 mod typedefs;
@@ -7,6 +8,7 @@ use crate::reader::*;
 use crate::typedefs::*;
 use std::fs::read;
 use std::path::Path;
+use crate::access::read_access;
 
 /// https://medium.com/swlh/an-introduction-to-jvm-bytecode-5ef3165fae70
 /// https://en.wikipedia.org/wiki/List_of_Java_bytecode_instructions
@@ -20,6 +22,12 @@ fn main() {
 fn read_class_file(path: &Path) {
     let mut bytes: ByteReader = ByteReader::from(read(path).unwrap());
 
+    read_version(&mut bytes);
+    read_constants(&mut bytes);
+    read_access(&mut bytes);
+}
+
+fn read_version(bytes: &mut ByteReader) {
     println!(
         "\
         magic = {magic:#X};\n\
@@ -30,5 +38,4 @@ fn read_class_file(path: &Path) {
         minor = bytes.take::<w2>(),
         major = bytes.take::<w2>()
     );
-    read_constants(&mut bytes)
 }

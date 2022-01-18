@@ -1,5 +1,5 @@
-use crate::{w1, w2, w4, ByteReader};
-use std::convert::TryFrom;
+use crate::{w1, w2, w4, ByteReader, w8};
+use std::convert::TryInto;
 use std::fmt::{Display, Formatter};
 
 // TODO: replace discriminators with fields
@@ -119,11 +119,11 @@ enum CpInfo {
     /// 4-byte int
     Integer { bytes: w4 },
     /// 4-byte float
-    Float { bytes: w4 },
+    Float { float: f32 },
     /// 8-byte long
-    Long { high_bytes: w4, low_bytes: w4 },
+    Long { long: w8 },
     /// 8-byte double
-    Double { high_bytes: w4, low_bytes: w4 },
+    Double { double: f64 },
     /// class
     Class { name_index: w2 },
     /// String object
@@ -190,22 +190,20 @@ impl CpInfo {
                 bytes: bytes.take::<w4>(),
             },
             CpTag::Float => Float {
-                bytes: bytes.take::<w4>(),
+                float: f32::from_bits(bytes.take::<w4>()),
             },
             CpTag::Long => {
                 let high_bytes: w4 = bytes.take();
                 let low_bytes: w4 = bytes.take();
                 Long {
-                    high_bytes,
-                    low_bytes,
+                    long: double_utils::long(high_bytes, low_bytes)
                 }
             }
             CpTag::Double => {
                 let high_bytes: w4 = bytes.take();
                 let low_bytes: w4 = bytes.take();
                 Double {
-                    high_bytes,
-                    low_bytes,
+                    double: double_utils::double(high_bytes, low_bytes)
                 }
             }
             CpTag::Class => Class {
@@ -280,14 +278,14 @@ impl CpInfo {
     }
 }
 
-struct Constant(CpTag, CpInfo);
+pub struct Constant(CpTag, CpInfo);
 
-impl TryFrom<w1> for CpTag {
+impl TryInto<CpTag> for w1 {
     type Error = InvalidCpTag;
 
-    fn try_from(i: w1) -> Result<Self, InvalidCpTag> {
+    fn try_into(self) -> Result<CpTag, InvalidCpTag> {
         use CpTag::*;
-        match i {
+        match self {
             1 => Ok(Utf8),
             3 => Ok(Integer),
             4 => Ok(Float),
@@ -327,18 +325,13 @@ impl Display for CpInfo {
             Integer { bytes } => {
                 format!("{}", bytes)
             }
-            it @ Float { .. } => {
-                format!("{:?}", it) // FIXME
+            Float { float } => {
+                format!("{}f", float) // FIXME
             }
-            Long {
-                high_bytes,
-                low_bytes,
-            } => {
-                format!("{}L", ((*high_bytes as u64) << 32) + *low_bytes as u64)
+            Long { long} => {
+                format!("{}L", long)
             }
-            it @ Double { .. } => {
-                format!("{:?}", it) // FIXME
-            }
+            Double { double } => { format!("{}", double) }
             Class { name_index } => {
                 format!("#{}", name_index)
             }
@@ -419,14 +412,14 @@ pub fn read_constants(bytes: &mut ByteReader) {
     for offset in 1..(constants_pool_count) {
         if skip {
             skip = false;
-            continue
+            continue;
         }
-        let tag = CpTag::try_from(bytes.take::<w1>()).ok().unwrap();
+        let tag = bytes.take::<w1>().try_into().ok().unwrap();
 
         // Long and Double "swallow" another index
         skip = match tag {
             CpTag::Double | CpTag::Long => true,
-            _ => false
+            _ => false,
         };
 
         let info = CpInfo::of(&tag, bytes);
@@ -438,4 +431,16 @@ pub fn read_constants(bytes: &mut ByteReader) {
             constant = constant
         );
     }
+}
+
+mod double_utils {
+    use crate::{w4, w8};
+
+    pub(crate) fn long(high_bytes: w4, low_bytes: w4) -> w8 {
+        ((high_bytes as w8) << 32) + low_bytes as u64
+    }
+    pub(crate) fn double(high_bytes: w4, low_bytes: w4) -> f64 {
+        f64::from_bits(long(high_bytes, low_bytes))
+    }
+
 }

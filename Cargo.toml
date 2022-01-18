@@ -1,5 +1,5 @@
 [package]
-name = "jvm_bytecode_handler"
+name = "rusty_javap"
 version = "0.1.0"
 authors = ["Starlight220 <53231611+Starlight220@users.noreply.github.com>"]
 edition = "2018"
