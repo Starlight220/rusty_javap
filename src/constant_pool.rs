@@ -1,5 +1,5 @@
-use crate::{w1, w2, w4, ByteReader, w8};
-use std::convert::TryInto;
+use crate::Take;
+use crate::{w1, w2, w4, w8, ByteReader};
 use std::fmt::{Display, Formatter};
 
 // TODO: replace discriminators with fields
@@ -41,8 +41,7 @@ enum CpTag {
     Package = 20,
 }
 
-struct InvalidCpTag;
-
+#[deprecated]
 impl CpTag {
     #[allow(unused)]
     fn arg_byte_count(&self) -> usize {
@@ -115,7 +114,7 @@ impl CpTag {
 #[derive(Debug)]
 enum CpInfo {
     /// string (usually referenced by other constants)
-    Utf8 { length: w2, bytes: Vec<w1> }, // FIXME: find a different type for bytes
+    Utf8 { string: String }, // FIXME: find a different type for bytes
     /// 4-byte int
     Integer { bytes: w4 },
     /// 4-byte float
@@ -172,141 +171,81 @@ enum CpInfo {
 }
 
 impl CpInfo {
-    fn of(tag: &CpTag, bytes: &mut ByteReader) -> CpInfo {
+    fn of(tag: &CpTag, bytes: &mut ByteReader) -> Result<CpInfo, String> {
         use CpInfo::*;
-        return match tag {
+        return Ok(match tag {
             CpTag::Package => Package {
-                name_index: bytes.take::<w2>(),
+                name_index: bytes.take()?,
             },
             CpTag::Utf8 => {
-                let length: w2 = bytes.take();
+                let length: w2 = bytes.take()?;
                 let mut vec: Vec<w1> = vec![];
                 for _ in 0..length {
-                    vec.push(bytes.take::<w1>())
+                    vec.push(bytes.take()?)
                 }
-                Utf8 { length, bytes: vec }
+                Utf8 {
+                    string: std::string::String::from_utf8_lossy(vec.as_slice()).to_string(),
+                }
             }
             CpTag::Integer => Integer {
-                bytes: bytes.take::<w4>(),
+                bytes: bytes.take()?,
             },
             CpTag::Float => Float {
-                float: f32::from_bits(bytes.take::<w4>()),
+                float: f32::from_bits(bytes.take()?),
             },
-            CpTag::Long => {
-                let high_bytes: w4 = bytes.take();
-                let low_bytes: w4 = bytes.take();
-                Long {
-                    long: double_utils::long(high_bytes, low_bytes)
-                }
-            }
-            CpTag::Double => {
-                let high_bytes: w4 = bytes.take();
-                let low_bytes: w4 = bytes.take();
-                Double {
-                    double: double_utils::double(high_bytes, low_bytes)
-                }
-            }
+            CpTag::Long => Long {
+                long: double_utils::long(bytes.take()?, bytes.take()?),
+            },
+            CpTag::Double => Double {
+                double: double_utils::double(bytes.take()?, bytes.take()?),
+            },
             CpTag::Class => Class {
-                name_index: bytes.take::<w2>(),
+                name_index: bytes.take()?,
             },
             CpTag::String => String {
-                string_index: bytes.take::<w2>(),
+                string_index: bytes.take()?,
             },
-            CpTag::Fieldref => {
-                let class_index: w2 = bytes.take();
-                let name_and_type_index: w2 = bytes.take();
-                Fieldref {
-                    class_index,
-                    name_and_type_index,
-                }
-            }
-            CpTag::Methodref => {
-                let class_index: w2 = bytes.take();
-                let name_and_type_index: w2 = bytes.take();
-                Methodref {
-                    class_index,
-                    name_and_type_index,
-                }
-            }
-            CpTag::InterfaceMethodref => {
-                let class_index: w2 = bytes.take();
-                let name_and_type_index: w2 = bytes.take();
-                InterfaceMethodref {
-                    class_index,
-                    name_and_type_index,
-                }
-            }
-            CpTag::NameAndType => {
-                let name_index: w2 = bytes.take();
-                let descriptor_index: w2 = bytes.take();
-                NameAndType {
-                    name_index,
-                    descriptor_index,
-                }
-            }
-            CpTag::MethodHandle => {
-                let reference_kind: w1 = bytes.take();
-                let reference_index: w2 = bytes.take();
-                MethodHandle {
-                    reference_kind,
-                    reference_index,
-                }
-            }
+            CpTag::Fieldref => Fieldref {
+                class_index: bytes.take()?,
+                name_and_type_index: bytes.take()?,
+            },
+            CpTag::Methodref => Methodref {
+                class_index: bytes.take()?,
+                name_and_type_index: bytes.take()?,
+            },
+            CpTag::InterfaceMethodref => InterfaceMethodref {
+                class_index: bytes.take()?,
+                name_and_type_index: bytes.take()?,
+            },
+            CpTag::NameAndType => NameAndType {
+                name_index: bytes.take()?,
+                descriptor_index: bytes.take()?,
+            },
+            CpTag::MethodHandle => MethodHandle {
+                reference_kind: bytes.take()?,
+                reference_index: bytes.take()?,
+            },
             CpTag::MethodType => MethodType {
-                descriptor_index: bytes.take(),
+                descriptor_index: bytes.take()?,
             },
-            CpTag::Dynamic => {
-                let bootstrap_method_attr_index: w2 = bytes.take();
-                let name_and_type_index: w2 = bytes.take();
-                Dynamic {
-                    bootstrap_method_attr_index,
-                    name_and_type_index,
-                }
-            }
-            CpTag::InvokeDynamic => {
-                let bootstrap_method_attr_index: w2 = bytes.take();
-                let name_and_type_index: w2 = bytes.take();
-                InvokeDynamic {
-                    bootstrap_method_attr_index,
-                    name_and_type_index,
-                }
-            }
+            CpTag::Dynamic => Dynamic {
+                bootstrap_method_attr_index: bytes.take()?,
+                name_and_type_index: bytes.take()?,
+            },
+            CpTag::InvokeDynamic => InvokeDynamic {
+                bootstrap_method_attr_index: bytes.take()?,
+                name_and_type_index: bytes.take()?,
+            },
             CpTag::Module => Module {
-                name_index: bytes.take::<w2>(),
+                name_index: bytes.take()?,
             },
-        };
+        });
     }
 }
 
+#[derive(Debug)]
 pub struct Constant(CpTag, CpInfo);
 
-impl TryInto<CpTag> for w1 {
-    type Error = InvalidCpTag;
-
-    fn try_into(self) -> Result<CpTag, InvalidCpTag> {
-        use CpTag::*;
-        match self {
-            1 => Ok(Utf8),
-            3 => Ok(Integer),
-            4 => Ok(Float),
-            5 => Ok(Long),
-            6 => Ok(Double),
-            7 => Ok(Class),
-            8 => Ok(String),
-            9 => Ok(Fieldref),
-            10 => Ok(Methodref),
-            11 => Ok(InterfaceMethodref),
-            12 => Ok(NameAndType),
-            15 => Ok(MethodHandle),
-            16 => Ok(MethodType),
-            17 => Ok(Dynamic),
-            18 => Ok(InvokeDynamic),
-            19 => Ok(Module),
-            20 => Ok(Package),
-            _ => Err(InvalidCpTag),
-        }
-    }
-}
 impl Display for CpTag {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
@@ -318,20 +257,19 @@ impl Display for CpInfo {
         // FIXME: provide proper to_string impl
         use CpInfo::*;
         let string = match self {
-            Utf8 {
-                length: _length,
-                bytes,
-            } => std::string::String::from_utf8_lossy(bytes.as_slice()).to_string(),
+            Utf8 { string } => string.to_owned(),
             Integer { bytes } => {
                 format!("{}", bytes)
             }
             Float { float } => {
-                format!("{}f", float) // FIXME
+                format!("{}f", float)
             }
-            Long { long} => {
+            Long { long } => {
                 format!("{}L", long)
             }
-            Double { double } => { format!("{}", double) }
+            Double { double } => {
+                format!("{}", double)
+            }
             Class { name_index } => {
                 format!("#{}", name_index)
             }
@@ -400,36 +338,68 @@ impl Display for Constant {
     }
 }
 
-pub fn read_constants(bytes: &mut ByteReader) {
-    let constants_pool_count: w2 = bytes.take();
-    println!(
-        "\
+impl Take<CpTag> for ByteReader {
+    fn take(&mut self) -> Result<CpTag, String> {
+        use CpTag::*;
+        let i: w1 = self.take()?;
+        match i {
+            1 => Ok(Utf8),
+            3 => Ok(Integer),
+            4 => Ok(Float),
+            5 => Ok(Long),
+            6 => Ok(Double),
+            7 => Ok(Class),
+            8 => Ok(String),
+            9 => Ok(Fieldref),
+            10 => Ok(Methodref),
+            11 => Ok(InterfaceMethodref),
+            12 => Ok(NameAndType),
+            15 => Ok(MethodHandle),
+            16 => Ok(MethodType),
+            17 => Ok(Dynamic),
+            18 => Ok(InvokeDynamic),
+            19 => Ok(Module),
+            20 => Ok(Package),
+            it @ _ => Err(format!("Unexpected Constant type ID `{it}`!", it = it)),
+        }
+    }
+}
+
+impl Take<Vec<Constant>> for ByteReader {
+    fn take(&mut self) -> Result<Vec<Constant>, String> {
+        let constants_pool_count: w2 = self.take()?;
+        println!(
+            "\
         Constant Pool [{constant_pool_count}]:\n\
         ",
-        constant_pool_count = constants_pool_count
-    );
-    let mut skip: bool = false;
-    for offset in 1..(constants_pool_count) {
-        if skip {
-            skip = false;
-            continue;
-        }
-        let tag = bytes.take::<w1>().try_into().ok().unwrap();
-
-        // Long and Double "swallow" another index
-        skip = match tag {
-            CpTag::Double | CpTag::Long => true,
-            _ => false,
-        };
-
-        let info = CpInfo::of(&tag, bytes);
-        let constant = Constant(tag, info);
-
-        println!(
-            "\t#{offset} = {constant}",
-            offset = offset,
-            constant = constant
+            constant_pool_count = constants_pool_count
         );
+        let mut vec = vec![];
+        let mut skip: bool = false;
+        for offset in 1..(constants_pool_count) {
+            if skip {
+                skip = false;
+                continue;
+            }
+            let tag = self.take()?;
+
+            // Long and Double "swallow" another index
+            skip = match tag {
+                CpTag::Double | CpTag::Long => true,
+                _ => false,
+            };
+
+            let info = CpInfo::of(&tag, self)?;
+            let constant = Constant(tag, info);
+
+            println!(
+                "\t#{offset} = {constant}",
+                offset = offset,
+                constant = constant
+            );
+            vec.push(constant);
+        }
+        Ok(vec)
     }
 }
 
@@ -442,5 +412,4 @@ mod double_utils {
     pub(crate) fn double(high_bytes: w4, low_bytes: w4) -> f64 {
         f64::from_bits(long(high_bytes, low_bytes))
     }
-
 }

@@ -2,8 +2,7 @@ use crate::*;
 use std::fmt::{Display, Formatter};
 use std::iter::FromIterator;
 
-#[derive(Debug)]
-#[derive(Copy, Clone)]
+#[derive(Debug, Copy, Clone)]
 pub enum AccessModifier {
     PUBLIC = 0x0001,
     FINAL = 0x0010,
@@ -22,17 +21,16 @@ impl Display for AccessModifier {
     }
 }
 
-fn calc_modifiers(flags: w2) -> Vec<AccessModifier> {
-    use AccessModifier::*;
-    let modifiers = vec![
-        PUBLIC, FINAL, SUPER, INTERFACE, ABSTRACT, SYNTHETIC, ANNOTATION, ENUM, MODULE,
-    ]
-    .into_iter();
-    Vec::from_iter(modifiers.filter(|&acc| (acc as i32 as u16) & flags != 0))
-}
-
-pub fn read_access(bytes: &mut ByteReader) {
-    let access_flags: w2 = bytes.take();
-
-    println!("Access Modifiers: [{:?}]", calc_modifiers(access_flags))
+impl Take<Vec<AccessModifier>> for ByteReader {
+    fn take(&mut self) -> Result<Vec<AccessModifier>, String> {
+        let flags: w2 = self.take()?;
+        use AccessModifier::*;
+        let modifiers = vec![
+            PUBLIC, FINAL, SUPER, INTERFACE, ABSTRACT, SYNTHETIC, ANNOTATION, ENUM, MODULE,
+        ]
+        .into_iter();
+        Ok(Vec::from_iter(
+            modifiers.filter(|&acc| (acc as i32 as w2) & flags != 0),
+        ))
+    }
 }

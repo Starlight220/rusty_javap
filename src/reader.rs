@@ -10,17 +10,21 @@ pub trait ByteSize {
     fn width() -> usize;
 }
 
-impl ByteReader {
-    pub fn take<Un: ByteSize>(&mut self) -> Un {
+pub trait Take<T> {
+    fn take(&mut self) -> Result<T, String>;
+}
+
+impl<Un: ByteSize> Take<Un> for ByteReader {
+    fn take(&mut self) -> Result<Un, String> {
         let start = self.ptr;
         self.ptr += Un::width();
-        return Un::read(&self.buffer[start..self.ptr]);
+        return Ok(Un::read(&self.buffer[start..self.ptr]));
     }
 }
 
 impl From<Vec<w1>> for ByteReader {
     fn from(buffer: Vec<w1>) -> Self {
-        return ByteReader { buffer, ptr: 0 };
+        return Self { buffer, ptr: 0 };
     }
 }
 
