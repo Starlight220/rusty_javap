@@ -22,6 +22,6 @@ fn main() {
 
     match bytes.take() {
         Err(error) => println!("{}", error),
-        Ok::<Class, _>(class) => println!("{:?}", class),
+        Ok::<Class, _>(class) => println!("{}", class),
     }
 }

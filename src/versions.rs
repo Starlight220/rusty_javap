@@ -24,7 +24,6 @@ impl Take<Version> for ByteReader {
             major,
             minor,
         };
-        println!("{}", version);
         Ok(version)
     }
 }

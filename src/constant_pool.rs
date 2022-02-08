@@ -1,10 +1,11 @@
 use crate::Take;
 use crate::{w1, w2, w4, w8, ByteReader};
 use std::fmt::{Display, Formatter};
+use std::ops::Index;
 
 // TODO: replace discriminators with fields
-#[derive(Debug)]
-enum CpTag {
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+pub enum CpTag {
     /// string (usually referenced by other constants)
     Utf8 = 1,
     /// 4-byte int
@@ -112,7 +113,7 @@ impl CpTag {
 }
 
 #[derive(Debug)]
-enum CpInfo {
+pub enum CpInfo {
     /// string (usually referenced by other constants)
     Utf8 { string: String }, // FIXME: find a different type for bytes
     /// 4-byte int
@@ -244,7 +245,7 @@ impl CpInfo {
 }
 
 #[derive(Debug)]
-pub struct Constant(CpTag, CpInfo);
+pub struct Constant(pub CpTag, pub CpInfo);
 
 impl Display for CpTag {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -365,20 +366,65 @@ impl Take<CpTag> for ByteReader {
     }
 }
 
-impl Take<Vec<Constant>> for ByteReader {
-    fn take(&mut self) -> Result<Vec<Constant>, String> {
+#[derive(Debug)]
+pub struct ConstantPool { pool: Vec<Option<Constant>> }
+
+impl Index<w2> for ConstantPool {
+    type Output = Option<Constant>;
+
+    fn index(&self, index: w2) -> &Self::Output {
+        &self.pool[index as usize]
+    }
+}
+
+impl ConstantPool {
+    fn new() -> ConstantPool {
+        ConstantPool {
+            pool: vec![Option::None]
+        }
+    }
+
+    pub fn get_class_name(&self, class_index: w2) -> Result<String, String> {
+        let index = match self[class_index].as_ref().ok_or(format!("Invalid index: {}", class_index))? {
+            Constant(CpTag::Class, CpInfo::Class { name_index }) => *name_index,
+            Constant(tag , _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `Class`, found `{found}`",
+                    idx=class_index,
+                    found=tag
+                ))
+            },
+        };
+        match self[index].as_ref().ok_or(format!("Invalid index: {}", index))? {
+            Constant(CpTag::Utf8, CpInfo::Utf8 { string }) => Ok(string.to_owned()),
+            Constant(tag , _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `Utf8`, found `{found}`",
+                    idx=class_index,
+                    found=tag
+                ))
+            },
+        }
+    }
+
+    fn push_empty(&mut self) {
+        self.pool.push(Option::None)
+    }
+
+    fn push(&mut self, constant: Constant) {
+        self.pool.push(Option::Some(constant))
+    }
+}
+
+impl Take<ConstantPool> for ByteReader {
+    fn take(&mut self) -> Result<ConstantPool, String> {
         let constants_pool_count: w2 = self.take()?;
-        println!(
-            "\
-        Constant Pool [{constant_pool_count}]:\n\
-        ",
-            constant_pool_count = constants_pool_count
-        );
-        let mut vec = vec![];
+        let mut pool = ConstantPool::new();
         let mut skip: bool = false;
-        for offset in 1..(constants_pool_count) {
+        for _offset in 1..(constants_pool_count) {
             if skip {
                 skip = false;
+                pool.push_empty();
                 continue;
             }
             let tag = self.take()?;
@@ -391,17 +437,31 @@ impl Take<Vec<Constant>> for ByteReader {
 
             let info = CpInfo::of(&tag, self)?;
             let constant = Constant(tag, info);
-
-            println!(
-                "\t#{offset} = {constant}",
-                offset = offset,
-                constant = constant
-            );
-            vec.push(constant);
+            pool.push(constant);
         }
-        Ok(vec)
+        Ok(pool)
     }
 }
+
+impl Display for ConstantPool {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "Constant Pool [{count}]:", count=self.pool.len())?;
+        for i in 1..self.pool.len() {
+            match &self.pool[i] {
+                None => {}
+                Some(Constant(_, info)) => {
+                    writeln!(f,
+                        "\t#{offset} = {constant}",
+                        offset = i,
+                        constant = info
+                    )?;
+                }
+            }
+        }
+        writeln!(f, "")
+    }
+}
+
 
 mod double_utils {
     use crate::{w4, w8};
