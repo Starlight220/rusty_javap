@@ -367,7 +367,9 @@ impl Take<CpTag> for ByteReader {
 }
 
 #[derive(Debug)]
-pub struct ConstantPool { pool: Vec<Option<Constant>> }
+pub struct ConstantPool {
+    pool: Vec<Option<Constant>>,
+}
 
 impl Index<w2> for ConstantPool {
     type Output = Option<Constant>;
@@ -380,30 +382,40 @@ impl Index<w2> for ConstantPool {
 impl ConstantPool {
     fn new() -> ConstantPool {
         ConstantPool {
-            pool: vec![Option::None]
+            pool: vec![Option::None],
         }
     }
 
     pub fn get_class_name(&self, class_index: w2) -> Result<String, String> {
-        let index = match self[class_index].as_ref().ok_or(format!("Invalid index: {}", class_index))? {
+        let index = match self[class_index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", class_index))?
+        {
             Constant(CpTag::Class, CpInfo::Class { name_index }) => *name_index,
-            Constant(tag , _) => {
+            Constant(tag, _) => {
                 return Err(format!(
                     "Wrong constant type at index {idx}: expected `Class`, found `{found}`",
-                    idx=class_index,
-                    found=tag
+                    idx = class_index,
+                    found = tag
                 ))
-            },
+            }
         };
-        match self[index].as_ref().ok_or(format!("Invalid index: {}", index))? {
+        self.get_utf8(index)
+    }
+
+    pub fn get_utf8(&self, index: w2) -> Result<String, String> {
+        match self[index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", index))?
+        {
             Constant(CpTag::Utf8, CpInfo::Utf8 { string }) => Ok(string.to_owned()),
-            Constant(tag , _) => {
+            Constant(tag, _) => {
                 return Err(format!(
                     "Wrong constant type at index {idx}: expected `Utf8`, found `{found}`",
-                    idx=class_index,
-                    found=tag
+                    idx = index,
+                    found = tag
                 ))
-            },
+            }
         }
     }
 
@@ -445,23 +457,18 @@ impl Take<ConstantPool> for ByteReader {
 
 impl Display for ConstantPool {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "Constant Pool [{count}]:", count=self.pool.len())?;
+        writeln!(f, "Constant Pool [{count}]:", count = self.pool.len())?;
         for i in 1..self.pool.len() {
             match &self.pool[i] {
                 None => {}
                 Some(Constant(_, info)) => {
-                    writeln!(f,
-                        "\t#{offset} = {constant}",
-                        offset = i,
-                        constant = info
-                    )?;
+                    writeln!(f, "\t#{offset} = {constant}", offset = i, constant = info)?;
                 }
             }
         }
         writeln!(f, "")
     }
 }
-
 
 mod double_utils {
     use crate::{w4, w8};

@@ -1,10 +1,12 @@
 mod access;
+mod attributes;
 mod classfile;
 mod constant_pool;
+mod fields;
+mod interfaces;
 mod reader;
 mod typedefs;
 mod versions;
-mod interfaces;
 
 use crate::classfile::Class;
 use crate::reader::*;

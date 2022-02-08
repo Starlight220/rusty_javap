@@ -1,18 +1,20 @@
-use std::fmt::{Display, Formatter};
-use crate::access::AccessModifier;
+use crate::access::ClassAccessModifier;
 use crate::constant_pool::ConstantPool;
+use crate::fields::{Fields, UnresolvedField};
+use crate::interfaces::{Interfaces, UnresolvedInterfaces};
 use crate::versions::Version;
-use crate::{ByteReader, Take, w2};
-use crate::interfaces::Interfaces;
+use crate::{w2, ByteReader, Take, Unresolved};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub struct Class {
     version: Version,
     constant_pool: ConstantPool,
-    access_flags: Vec<AccessModifier>,
+    access_flags: Vec<ClassAccessModifier>,
     this_class: String,
     super_class: Option<String>,
     interfaces: Interfaces,
+    fields: Fields,
 }
 
 impl Take<Class> for ByteReader {
@@ -31,8 +33,11 @@ impl Take<Class> for ByteReader {
             Option::Some(constant_pool.get_class_name(super_class_index)?)
         };
 
-        let interfaces_indexes = self.take()?;
-        let interfaces = Interfaces::resolve_all(&constant_pool, interfaces_indexes)?;
+        let unresolved_interfaces: UnresolvedInterfaces = self.take()?;
+        let interfaces = unresolved_interfaces.resolve(&constant_pool)?;
+
+        let unresolved_fields: Vec<UnresolvedField> = self.take()?;
+        let fields = unresolved_fields.resolve(&constant_pool)?.into();
 
         Ok(Class {
             version,
@@ -41,6 +46,7 @@ impl Take<Class> for ByteReader {
             this_class,
             super_class,
             interfaces,
+            fields,
         })
     }
 }
@@ -51,8 +57,13 @@ impl Display for Class {
         writeln!(f, "{}", self.constant_pool)?;
         writeln!(f, "{:?}", self.access_flags)?; // TODO
         writeln!(f, "Class: {}", self.this_class)?;
-        writeln!(f, "Superclass: {}", self.super_class.as_ref().unwrap_or(&"None".to_string()))?;
+        writeln!(
+            f,
+            "Superclass: {}",
+            self.super_class.as_ref().unwrap_or(&"None".to_string())
+        )?;
         writeln!(f, "{}", self.interfaces)?;
+        writeln!(f, "{}", self.fields)?;
         write!(f, "")
     }
 }
