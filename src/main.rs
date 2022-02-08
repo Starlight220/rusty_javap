@@ -4,6 +4,7 @@ mod constant_pool;
 mod reader;
 mod typedefs;
 mod versions;
+mod interfaces;
 
 use crate::classfile::Class;
 use crate::reader::*;

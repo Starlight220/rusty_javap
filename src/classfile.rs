@@ -3,6 +3,7 @@ use crate::access::AccessModifier;
 use crate::constant_pool::ConstantPool;
 use crate::versions::Version;
 use crate::{ByteReader, Take, w2};
+use crate::interfaces::Interfaces;
 
 #[derive(Debug)]
 pub struct Class {
@@ -11,6 +12,7 @@ pub struct Class {
     access_flags: Vec<AccessModifier>,
     this_class: String,
     super_class: Option<String>,
+    interfaces: Interfaces,
 }
 
 impl Take<Class> for ByteReader {
@@ -28,12 +30,17 @@ impl Take<Class> for ByteReader {
         } else {
             Option::Some(constant_pool.get_class_name(super_class_index)?)
         };
+
+        let interfaces_indexes = self.take()?;
+        let interfaces = Interfaces::resolve_all(&constant_pool, interfaces_indexes)?;
+
         Ok(Class {
             version,
             constant_pool,
             access_flags,
             this_class,
-            super_class
+            super_class,
+            interfaces,
         })
     }
 }
@@ -45,6 +52,7 @@ impl Display for Class {
         writeln!(f, "{:?}", self.access_flags)?; // TODO
         writeln!(f, "Class: {}", self.this_class)?;
         writeln!(f, "Superclass: {}", self.super_class.as_ref().unwrap_or(&"None".to_string()))?;
+        writeln!(f, "{}", self.interfaces)?;
         write!(f, "")
     }
 }
