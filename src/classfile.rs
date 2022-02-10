@@ -5,6 +5,8 @@ use crate::interfaces::{Interfaces, UnresolvedInterfaces};
 use crate::versions::Version;
 use crate::{w2, ByteReader, Take, Unresolved};
 use std::fmt::{Display, Formatter};
+use crate::attributes::{Attribute, UnresolvedAttribute};
+use crate::methods::{Methods, UnresolvedMethod};
 
 #[derive(Debug)]
 pub struct Class {
@@ -15,6 +17,8 @@ pub struct Class {
     super_class: Option<String>,
     interfaces: Interfaces,
     fields: Fields,
+    methods: Methods,
+    attributes: Vec<Attribute>
 }
 
 impl Take<Class> for ByteReader {
@@ -39,6 +43,12 @@ impl Take<Class> for ByteReader {
         let unresolved_fields: Vec<UnresolvedField> = self.take()?;
         let fields = unresolved_fields.resolve(&constant_pool)?.into();
 
+        let unresolved_methods: Vec<UnresolvedMethod> = self.take()?;
+        let methods = unresolved_methods.resolve(&constant_pool)?.into();
+
+        let unresolved_attributes: Vec<UnresolvedAttribute> = self.take()?;
+        let attributes = unresolved_attributes.resolve(&constant_pool)?;
+
         Ok(Class {
             version,
             constant_pool,
@@ -47,6 +57,8 @@ impl Take<Class> for ByteReader {
             super_class,
             interfaces,
             fields,
+            methods,
+            attributes
         })
     }
 }
@@ -64,6 +76,8 @@ impl Display for Class {
         )?;
         writeln!(f, "{}", self.interfaces)?;
         writeln!(f, "{}", self.fields)?;
+        writeln!(f, "{}", self.methods)?;
+        writeln!(f, "{:?}", self.attributes)?;
         write!(f, "")
     }
 }

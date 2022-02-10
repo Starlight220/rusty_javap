@@ -27,3 +27,25 @@ impl<T: Unresolved> Unresolved for Vec<T> {
     }
 }
 
+#[macro_export]
+macro_rules! container {
+    ($c:ident, $t:ty) => {
+        #[derive(Debug)]
+        pub struct $c(Vec<$t>);
+
+        impl From<Vec<$t>> for $c {
+           fn from(vec: Vec<$t>) -> Self {
+                Self(vec)
+           }
+        }
+        impl Display for $c {
+           fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            writeln!(f, "{} [{}]:", stringify!($c), self.0.len())?;
+            for field in &self.0 {
+                field.fmt(f)?;
+            }
+            write!(f, "")
+        }
+}
+    };
+}

@@ -1,19 +1,36 @@
-use crate::access::FieldAccessModifier;
-use crate::attributes::{Attribute, UnresolvedAttribute};
-use crate::constant_pool::ConstantPool;
-use crate::{w2, ByteReader, Take, Unresolved, container};
 use std::fmt::{Display, Formatter};
+use crate::access::MethodAccessModifier;
+use crate::attributes::{Attribute, UnresolvedAttribute};
+use crate::{ByteReader, Take, Unresolved, w2};
+use crate::constant_pool::ConstantPool;
+use crate::container;
 
-pub struct UnresolvedField {
-    access_flags: Vec<FieldAccessModifier>,
+pub struct UnresolvedMethod {
+    access_flags: Vec<MethodAccessModifier>,
     name_index: w2,
     descriptor_index: w2,
     // TODO: add a descriptor struct?
     attributes: Vec<UnresolvedAttribute>,
 }
 
-impl Take<Vec<UnresolvedField>> for ByteReader {
-    fn take(&mut self) -> Result<Vec<UnresolvedField>, String> {
+impl Take<UnresolvedMethod> for ByteReader {
+    fn take(&mut self) -> Result<UnresolvedMethod, String> {
+        let access_flags = self.take()?;
+        let name_index = self.take()?;
+        let descriptor_index = self.take()?;
+        let attributes = self.take()?;
+
+        Ok(UnresolvedMethod {
+            access_flags,
+            name_index,
+            descriptor_index,
+            attributes,
+        })
+    }
+}
+
+impl Take<Vec<UnresolvedMethod>> for ByteReader {
+    fn take(&mut self) -> Result<Vec<UnresolvedMethod>, String> {
         let field_count: w2 = self.take()?;
         let mut result = vec![];
         for _ in 0..field_count {
@@ -23,28 +40,12 @@ impl Take<Vec<UnresolvedField>> for ByteReader {
     }
 }
 
-impl Take<UnresolvedField> for ByteReader {
-    fn take(&mut self) -> Result<UnresolvedField, String> {
-        let access_flags = self.take()?;
-        let name_index = self.take()?;
-        let descriptor_index = self.take()?;
-        let attributes = self.take()?;
-
-        Ok(UnresolvedField {
-            access_flags,
-            name_index,
-            descriptor_index,
-            attributes,
-        })
-    }
-}
-
-impl Unresolved for UnresolvedField {
-    type Resolved = Field;
+impl Unresolved for UnresolvedMethod {
+    type Resolved = Method;
     type NeededToResolve = ConstantPool;
 
     fn resolve(self, constant_pool: &Self::NeededToResolve) -> Result<Self::Resolved, String> {
-        Ok(Field {
+        Ok(Method {
             access_flags: self.access_flags,
             name: constant_pool.get_utf8(self.name_index)?,
             descriptor: constant_pool.get_utf8(self.descriptor_index)?,
@@ -54,14 +55,14 @@ impl Unresolved for UnresolvedField {
 }
 
 #[derive(Debug)]
-pub struct Field {
-    access_flags: Vec<FieldAccessModifier>,
+pub struct Method {
+    access_flags: Vec<MethodAccessModifier>,
     name: String,
     descriptor: String, // TODO: add a descriptor struct?
     attributes: Vec<Attribute>,
 }
 
-impl Display for Field {
+impl Display for Method {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         writeln!(f, "\t{}:", self.name)?;
         writeln!(f, "\t\tDescriptor:\t{}", self.descriptor)?;
@@ -71,4 +72,4 @@ impl Display for Field {
     }
 }
 
-container!(Fields, Field);
+container!(Methods, Method);

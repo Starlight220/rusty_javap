@@ -4,11 +4,33 @@ use crate::{w1, w2, w4, ByteReader, Take, Unresolved};
 #[derive(Debug)]
 pub enum Attribute {
     ConstantValue { constantvalue: w2 },
-    // Code { }, // TODO: method
-    Synthetic {},
+    // Code(UnresolvedCode),
+    // Exceptions,
+    // SourceFile,
+    // LineNumberTable,
+    // LocalVariableTable,
+    // InnerClasses,
+    Synthetic,
+    Deprecated,
+    // EnclosingMethod,
     Signature { signature_index: w2 },
-    Deprecated {},
-    // RuntimeVisibleAnnotations { num_annotations: w2, annotations: }, // TODO: needs annotations
+    // SourceDebugExtension,
+    // LocalVariableTypeTable,
+    // RuntimeVisibleAnnotations { num_annotations: w2}, // TODO: needs annotations
+    // RuntimeInvisibleAnnotations { num_annotations: w2}, // TODO: needs annotations
+    // StackMapTable { entries: Vec<StackMapFrame>}, } // TODO
+    // BootstrapMethods,
+    // AnnotationDefault,
+    // RuntimeVisibleTypeAnnotations { num_annotations: w2}, // TODO: needs annotations
+    // RuntimeInvisibleTypeAnnotations { num_annotations: w2}, // TODO: needs annotations
+    // MethodParameters,
+    // Module,
+    // ModulePackages,
+    // ModuleMainClass,
+    // NestHost,
+    // NestMembers,
+    #[allow(non_camel_case_types)]
+    UNIMPLEMENTED_ATTRIBUTE_TODO // FIXME
 }
 
 impl Attribute {
@@ -19,16 +41,18 @@ impl Attribute {
             stringify!(ConstantValue) => ConstantValue {
                 constantvalue: bytes.take()?,
             },
-            stringify!(Synthetic) => Synthetic {},
-            stringify!(Deprecated) => Deprecated {},
+            stringify!(Synthetic) => Synthetic,
+            stringify!(Deprecated) => Deprecated,
             stringify!(Signature) => Signature {
                 signature_index: bytes.take()?,
             },
-            &_ => todo!(),
+
+            &_ => UNIMPLEMENTED_ATTRIBUTE_TODO,
         })
     }
 }
 
+#[derive(Debug)]
 pub struct UnresolvedAttribute {
     name_index: w2,
     _attribute_length: w4,
@@ -70,4 +94,23 @@ impl Unresolved for Vec<UnresolvedAttribute> {
         }
         Ok(resolved)
     }
+}
+
+#[derive(Debug)]
+pub struct UnresolvedCode {
+    max_stack: w2,
+    max_locals: w2,
+    code_length: w4,
+    code: Vec<w1>,
+    exception_table_length: w2,
+    exception_table: Vec<Exception>,
+    attributes: Vec<UnresolvedAttribute>,
+}
+
+#[derive(Debug)]
+pub struct Exception {
+    start_pc: w2,
+    end_pc: w2,
+    handler_pc: w2,
+    catch_type: w2,
 }
