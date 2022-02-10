@@ -1,19 +1,22 @@
 use crate::constant_pool::ConstantPool;
-use crate::{w1, w2, w4, ByteReader, Take, Unresolved};
+use crate::{container, w1, w2, w4, ByteReader, Take, Unresolved};
+use std::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub enum Attribute {
-    ConstantValue { constantvalue: w2 },
+    ConstantValue(String),
     // Code(UnresolvedCode),
     // Exceptions,
-    // SourceFile,
+    SourceFile(String),
     // LineNumberTable,
     // LocalVariableTable,
     // InnerClasses,
     Synthetic,
     Deprecated,
     // EnclosingMethod,
-    Signature { signature_index: w2 },
+    Signature {
+        signature_index: w2,
+    },
     // SourceDebugExtension,
     // LocalVariableTypeTable,
     // RuntimeVisibleAnnotations { num_annotations: w2}, // TODO: needs annotations
@@ -30,22 +33,27 @@ pub enum Attribute {
     // NestHost,
     // NestMembers,
     #[allow(non_camel_case_types)]
-    UNIMPLEMENTED_ATTRIBUTE_TODO // FIXME
+    UNIMPLEMENTED_ATTRIBUTE_TODO, // FIXME
 }
 
 impl Attribute {
-    fn create(name: String, info: Vec<w1>) -> Result<Attribute, String> {
+    fn create(
+        name: String,
+        info: Vec<w1>,
+        constant_pool: &ConstantPool,
+    ) -> Result<Attribute, String> {
         let mut bytes = ByteReader::from(info);
         use Attribute::*;
         Ok(match name.as_str() {
-            stringify!(ConstantValue) => ConstantValue {
-                constantvalue: bytes.take()?,
-            },
+            stringify!(ConstantValue) => {
+                ConstantValue(constant_pool.get_constant_as_string(bytes.take()?)?)
+            }
             stringify!(Synthetic) => Synthetic,
             stringify!(Deprecated) => Deprecated,
             stringify!(Signature) => Signature {
                 signature_index: bytes.take()?,
             },
+            stringify!(SourceFile) => SourceFile(constant_pool.get_utf8(bytes.take()?)?),
 
             &_ => UNIMPLEMENTED_ATTRIBUTE_TODO,
         })
@@ -81,7 +89,7 @@ impl Take<Vec<UnresolvedAttribute>> for ByteReader {
 }
 
 impl Unresolved for Vec<UnresolvedAttribute> {
-    type Resolved = Vec<Attribute>;
+    type Resolved = Attributes;
     type NeededToResolve = ConstantPool;
 
     fn resolve(self, constant_pool: &Self::NeededToResolve) -> Result<Self::Resolved, String> {
@@ -90,27 +98,29 @@ impl Unresolved for Vec<UnresolvedAttribute> {
             resolved.push(Attribute::create(
                 constant_pool.get_utf8(attr.name_index)?,
                 attr.info,
+                constant_pool,
             )?)
         }
-        Ok(resolved)
+        Ok(resolved.into())
     }
 }
 
-#[derive(Debug)]
-pub struct UnresolvedCode {
-    max_stack: w2,
-    max_locals: w2,
-    code_length: w4,
-    code: Vec<w1>,
-    exception_table_length: w2,
-    exception_table: Vec<Exception>,
-    attributes: Vec<UnresolvedAttribute>,
+impl Display for Attribute {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        use Attribute::*;
+        match self {
+            ConstantValue(contents_str) => {
+                write!(f, "{}({})", stringify!(ConstantValue), contents_str)
+            }
+            SourceFile(file) => write!(f, "{}({})", stringify!(SourceFile), file),
+            Synthetic => write!(f, "{}", stringify!(Synthetic)),
+            Deprecated => write!(f, "{}", stringify!(Deprecated)),
+            Signature { signature_index } => {
+                write!(f, "{}(#{})", stringify!(Signature), signature_index)
+            }
+            UNIMPLEMENTED_ATTRIBUTE_TODO => write!(f, "UNIMPLEMENTED_TODO"),
+        }
+    }
 }
 
-#[derive(Debug)]
-pub struct Exception {
-    start_pc: w2,
-    end_pc: w2,
-    handler_pc: w2,
-    catch_type: w2,
-}
+container!(Attributes, Attribute);

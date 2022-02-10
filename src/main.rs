@@ -4,10 +4,10 @@ mod classfile;
 mod constant_pool;
 mod fields;
 mod interfaces;
+mod methods;
 mod reader;
 mod typedefs;
 mod versions;
-mod methods;
 
 use crate::classfile::Class;
 use crate::reader::*;

@@ -99,10 +99,20 @@ impl Take<Vec<MethodAccessModifier>> for ByteReader {
         let flags: w2 = self.take()?;
         use MethodAccessModifier::*;
         let modifiers = vec![
-            PUBLIC, PRIVATE, PROTECTED, STATIC, FINAL, SYNCHRONIZED, BRIDGE, VARARGS,
-            NATIVE, ABSTRACT, STRICT, SYNTHETIC,
+            PUBLIC,
+            PRIVATE,
+            PROTECTED,
+            STATIC,
+            FINAL,
+            SYNCHRONIZED,
+            BRIDGE,
+            VARARGS,
+            NATIVE,
+            ABSTRACT,
+            STRICT,
+            SYNTHETIC,
         ]
-            .into_iter();
+        .into_iter();
         Ok(Vec::from_iter(
             modifiers.filter(|&acc| (acc as i32 as w2) & flags != 0),
         ))

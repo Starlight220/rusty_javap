@@ -1,12 +1,12 @@
 use crate::access::ClassAccessModifier;
+use crate::attributes::{Attributes, UnresolvedAttribute};
 use crate::constant_pool::ConstantPool;
 use crate::fields::{Fields, UnresolvedField};
 use crate::interfaces::{Interfaces, UnresolvedInterfaces};
+use crate::methods::{Methods, UnresolvedMethod};
 use crate::versions::Version;
 use crate::{w2, ByteReader, Take, Unresolved};
 use std::fmt::{Display, Formatter};
-use crate::attributes::{Attribute, UnresolvedAttribute};
-use crate::methods::{Methods, UnresolvedMethod};
 
 #[derive(Debug)]
 pub struct Class {
@@ -18,7 +18,7 @@ pub struct Class {
     interfaces: Interfaces,
     fields: Fields,
     methods: Methods,
-    attributes: Vec<Attribute>
+    attributes: Attributes,
 }
 
 impl Take<Class> for ByteReader {
@@ -58,7 +58,7 @@ impl Take<Class> for ByteReader {
             interfaces,
             fields,
             methods,
-            attributes
+            attributes,
         })
     }
 }
@@ -77,7 +77,7 @@ impl Display for Class {
         writeln!(f, "{}", self.interfaces)?;
         writeln!(f, "{}", self.fields)?;
         writeln!(f, "{}", self.methods)?;
-        writeln!(f, "{:?}", self.attributes)?;
+        writeln!(f, "{}", self.attributes)?;
         write!(f, "")
     }
 }

@@ -34,18 +34,19 @@ macro_rules! container {
         pub struct $c(Vec<$t>);
 
         impl From<Vec<$t>> for $c {
-           fn from(vec: Vec<$t>) -> Self {
+            fn from(vec: Vec<$t>) -> Self {
                 Self(vec)
-           }
+            }
         }
         impl Display for $c {
-           fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            writeln!(f, "{} [{}]:", stringify!($c), self.0.len())?;
-            for field in &self.0 {
-                field.fmt(f)?;
+            fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+                writeln!(f, "{} [{}]:", stringify!($c), self.0.len())?;
+                for field in &self.0 {
+                    write!(f, "\t")?;
+                    field.fmt(f)?;
+                }
+                write!(f, "")
             }
-            write!(f, "")
         }
-}
     };
 }

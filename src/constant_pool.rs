@@ -42,82 +42,12 @@ pub enum CpTag {
     Package = 20,
 }
 
-#[deprecated]
-impl CpTag {
-    #[allow(unused)]
-    fn arg_byte_count(&self) -> usize {
-        use CpTag::*;
-        return match self {
-            Utf8 => {
-                let length: usize = 2;
-                let bytes: usize = 1 * length;
-                length + bytes
-            }
-
-            Integer | Float => {
-                let bytes: usize = 4;
-                bytes
-            }
-
-            Long | Double => {
-                let high_bytes: usize = 4;
-                let low_bytes: usize = 4;
-                high_bytes + low_bytes
-            }
-
-            Class => {
-                let name_index: usize = 2;
-                name_index
-            }
-
-            String => {
-                let string_index: usize = 2;
-                string_index
-            }
-
-            Fieldref | Methodref | InterfaceMethodref => {
-                let class_index: usize = 2;
-                let name_and_type_index: usize = 2;
-                class_index + name_and_type_index
-            }
-
-            NameAndType => {
-                let name_index: usize = 2;
-                let descriptor_index: usize = 2;
-                name_index + descriptor_index
-            }
-
-            MethodHandle => {
-                let reference_kind: usize = 1;
-                let reference_index: usize = 2;
-                reference_kind + reference_index
-            }
-
-            MethodType => {
-                let descriptor_index: usize = 2;
-                descriptor_index
-            }
-
-            Dynamic | InvokeDynamic => {
-                let bootstrap_method_attr_index: usize = 2;
-                let name_and_type_index: usize = 2;
-                bootstrap_method_attr_index + name_and_type_index
-            }
-
-            Module | Package => {
-                let name_index: usize = 2;
-                name_index
-            }
-        };
-    }
-}
-
 #[derive(Debug)]
 pub enum CpInfo {
     /// string (usually referenced by other constants)
     Utf8 { string: String }, // FIXME: find a different type for bytes
     /// 4-byte int
-    Integer { bytes: w4 },
+    Integer { int: w4 },
     /// 4-byte float
     Float { float: f32 },
     /// 8-byte long
@@ -188,9 +118,7 @@ impl CpInfo {
                     string: std::string::String::from_utf8_lossy(vec.as_slice()).to_string(),
                 }
             }
-            CpTag::Integer => Integer {
-                bytes: bytes.take()?,
-            },
+            CpTag::Integer => Integer { int: bytes.take()? },
             CpTag::Float => Float {
                 float: f32::from_bits(bytes.take()?),
             },
@@ -242,6 +170,41 @@ impl CpInfo {
             },
         });
     }
+
+    fn content_to_string(&self) -> String {
+        use CpInfo::*;
+        match self {
+            Utf8 { string } => string.to_owned(),
+            Integer { int: bytes } => format!("{}", bytes),
+            Float { float } => format!("{}f", float),
+            Long { long } => format!("{}L", long),
+            Double { double } => format!("{}", double),
+            Class { name_index } => format!("#{}", name_index),
+            String { string_index } => format!("#{}", string_index),
+            Fieldref {
+                class_index,
+                name_and_type_index,
+            } => format!("#{}.#{}", class_index, name_and_type_index),
+            Methodref {
+                class_index,
+                name_and_type_index,
+            } => format!("#{}.#{}", class_index, name_and_type_index),
+            InterfaceMethodref {
+                class_index,
+                name_and_type_index,
+            } => format!("#{}.#{}", class_index, name_and_type_index),
+            NameAndType {
+                name_index,
+                descriptor_index,
+            } => format!("#{}:#{}", name_index, descriptor_index),
+            it @ MethodHandle { .. } => format!("{:?}", it),
+            MethodType { descriptor_index } => format!("#{}", descriptor_index),
+            it @ Dynamic { .. } => format!("{:?}", it),
+            it @ InvokeDynamic { .. } => format!("{:?}", it),
+            Module { name_index } => format!("#{}", name_index),
+            Package { name_index } => format!("#{}", name_index),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -256,70 +219,7 @@ impl Display for CpTag {
 impl Display for CpInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // FIXME: provide proper to_string impl
-        use CpInfo::*;
-        let string = match self {
-            Utf8 { string } => string.to_owned(),
-            Integer { bytes } => {
-                format!("{}", bytes)
-            }
-            Float { float } => {
-                format!("{}f", float)
-            }
-            Long { long } => {
-                format!("{}L", long)
-            }
-            Double { double } => {
-                format!("{}", double)
-            }
-            Class { name_index } => {
-                format!("#{}", name_index)
-            }
-            String { string_index } => {
-                format!("#{}", string_index)
-            }
-            Fieldref {
-                class_index,
-                name_and_type_index,
-            } => {
-                format!("#{}.#{}", class_index, name_and_type_index)
-            }
-            Methodref {
-                class_index,
-                name_and_type_index,
-            } => {
-                format!("#{}.#{}", class_index, name_and_type_index)
-            }
-            InterfaceMethodref {
-                class_index,
-                name_and_type_index,
-            } => {
-                format!("#{}.#{}", class_index, name_and_type_index)
-            }
-            NameAndType {
-                name_index,
-                descriptor_index,
-            } => {
-                format!("#{}:#{}", name_index, descriptor_index)
-            }
-            it @ MethodHandle { .. } => {
-                format!("{:?}", it) // FIXME
-            }
-            MethodType { descriptor_index } => {
-                format!("#{}", descriptor_index)
-            }
-            it @ Dynamic { .. } => {
-                format!("{:?}", it) // FIXME
-            }
-            it @ InvokeDynamic { .. } => {
-                format!("{:?}", it) // FIXME
-            }
-            Module { name_index } => {
-                format!("#{}", name_index)
-            }
-            Package { name_index } => {
-                format!("#{}", name_index)
-            }
-        };
+        let string = self.content_to_string();
         write!(f, "{}", string)
     }
 }
@@ -413,6 +313,28 @@ impl ConstantPool {
                 return Err(format!(
                     "Wrong constant type at index {idx}: expected `Utf8`, found `{found}`",
                     idx = index,
+                    found = tag
+                ))
+            }
+        }
+    }
+
+    pub fn get_constant_as_string(&self, index: w2) -> Result<String, String> {
+        match self[index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", index))?
+        {
+            Constant(CpTag::String, CpInfo::String { string_index }) => {
+                Ok(format!("\"{}\"", self.get_utf8(*string_index)?))
+            }
+            Constant(CpTag::Double | CpTag::Integer | CpTag::Float | CpTag::Long, it) => {
+                Ok(it.content_to_string())
+            }
+            Constant(tag, _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected {expected}, found `{found}`",
+                    idx = index,
+                    expected = stringify!([Integer, Float, Long, Double, String]),
                     found = tag
                 ))
             }
