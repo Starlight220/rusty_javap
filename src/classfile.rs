@@ -4,22 +4,9 @@ use crate::constant_pool::ConstantPool;
 use crate::fields::{Fields, UnresolvedField};
 use crate::interfaces::{Interfaces, UnresolvedInterfaces};
 use crate::methods::{Methods, UnresolvedMethod};
-use crate::versions::Version;
-use crate::{w2, ByteReader, Take, Unresolved};
+use crate::model::class::Version;
+use crate::{ByteReader, Take, Unresolved, w2};
 use std::fmt::{Display, Formatter};
-
-#[derive(Debug)]
-pub struct Class {
-    version: Version,
-    constant_pool: ConstantPool,
-    access_flags: Vec<ClassAccessModifier>,
-    this_class: String,
-    super_class: Option<String>,
-    interfaces: Interfaces,
-    fields: Fields,
-    methods: Methods,
-    attributes: Attributes,
-}
 
 impl Take<Class> for ByteReader {
     fn take(&mut self) -> Result<Class, String> {
@@ -60,24 +47,5 @@ impl Take<Class> for ByteReader {
             methods,
             attributes,
         })
-    }
-}
-
-impl Display for Class {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}", self.version)?;
-        writeln!(f, "{}", self.constant_pool)?;
-        writeln!(f, "{:?}", self.access_flags)?; // TODO
-        writeln!(f, "Class: {}", self.this_class)?;
-        writeln!(
-            f,
-            "Superclass: {}",
-            self.super_class.as_ref().unwrap_or(&"None".to_string())
-        )?;
-        writeln!(f, "{}", self.interfaces)?;
-        writeln!(f, "{}", self.fields)?;
-        writeln!(f, "{}", self.methods)?;
-        writeln!(f, "{}", self.attributes)?;
-        write!(f, "")
     }
 }

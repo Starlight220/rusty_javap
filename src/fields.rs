@@ -53,26 +53,5 @@ impl Unresolved for UnresolvedField {
     }
 }
 
-#[derive(Debug)]
-pub struct Field {
-    access_flags: Vec<FieldAccessModifier>,
-    name: String,
-    descriptor: String, // TODO: add a descriptor struct?
-    attributes: Attributes,
-}
-
-impl Display for Field {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}:", self.name)?;
-        writeln!(f, "\t\tDescriptor:\t{}", self.descriptor)?;
-        writeln!(f, "\t\tAccess:\t{:?}", self.access_flags)?;
-        writeln!(
-            f,
-            "\t\t{}",
-            format!("{}", self.attributes).replace("\t", "\t\t\t")
-        )?;
-        write!(f, "")
-    }
-}
 
 container!(Fields, Field);

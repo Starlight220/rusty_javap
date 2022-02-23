@@ -1,13 +1,7 @@
 use crate::typedefs::*;
 use crate::{ByteReader, Take};
 use std::fmt::{Display, Formatter};
-
-#[derive(Debug)]
-pub struct Version {
-    magic: w4,
-    major: w2,
-    minor: w2,
-}
+use crate::model::class::Version;
 
 impl Take<Version> for ByteReader {
     fn take(&mut self) -> Result<Version, String> {
@@ -25,15 +19,5 @@ impl Take<Version> for ByteReader {
             minor,
         };
         Ok(version)
-    }
-}
-
-impl Display for Version {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "magic: {:#X}\nmajor: {}\nminor: {}",
-            self.magic, self.major, self.minor
-        )
     }
 }

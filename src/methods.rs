@@ -1,9 +1,9 @@
-use crate::access::MethodAccessModifier;
 use crate::attributes::{Attributes, UnresolvedAttribute};
 use crate::constant_pool::ConstantPool;
 use crate::container;
-use crate::{w2, ByteReader, Take, Unresolved};
+use crate::{ByteReader, Take, Unresolved, w2};
 use std::fmt::{Display, Formatter};
+use crate::model::method::{Method, MethodAccessModifier};
 
 pub struct UnresolvedMethod {
     access_flags: Vec<MethodAccessModifier>,
@@ -51,28 +51,6 @@ impl Unresolved for UnresolvedMethod {
             descriptor: constant_pool.get_utf8(self.descriptor_index)?,
             attributes: self.attributes.resolve(constant_pool)?,
         })
-    }
-}
-
-#[derive(Debug)]
-pub struct Method {
-    access_flags: Vec<MethodAccessModifier>,
-    name: String,
-    descriptor: String, // TODO: add a descriptor struct?
-    attributes: Attributes,
-}
-
-impl Display for Method {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}:", self.name)?;
-        writeln!(f, "\t\tDescriptor:\t{}", self.descriptor)?;
-        writeln!(f, "\t\tAccess:\t{:?}", self.access_flags)?;
-        writeln!(
-            f,
-            "\t\t{}",
-            format!("{}", self.attributes).replace("\t", "\t\t\t")
-        )?;
-        write!(f, "")
     }
 }
 

@@ -19,10 +19,6 @@ impl Unresolved for UnresolvedInterfaces {
     }
 }
 
-#[derive(Debug)]
-pub struct Interfaces {
-    pool: Vec<String>,
-}
 
 impl Take<UnresolvedInterfaces> for ByteReader {
     fn take(&mut self) -> Result<UnresolvedInterfaces, String> {

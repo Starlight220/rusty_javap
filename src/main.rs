@@ -8,6 +8,7 @@ mod methods;
 mod reader;
 mod typedefs;
 mod versions;
+mod model;
 
 use crate::classfile::Class;
 use crate::reader::*;
