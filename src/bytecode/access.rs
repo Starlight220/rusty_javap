@@ -3,6 +3,7 @@ use crate::model::field::FieldAccessModifier;
 use crate::model::method::MethodAccessModifier;
 use crate::*;
 use std::iter::FromIterator;
+use crate::bytecode::reader::{ByteReader, Take};
 
 impl Take<Vec<ClassAccessModifier>> for ByteReader {
     fn take(&mut self) -> Result<Vec<ClassAccessModifier>, String> {

@@ -1,10 +1,11 @@
-use crate::attributes::UnresolvedAttribute;
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::{Class, w2};
+use crate::bytecode::attributes::UnresolvedAttribute;
+use crate::bytecode::fields::UnresolvedField;
+use crate::bytecode::interfaces::UnresolvedInterfaces;
+use crate::bytecode::methods::UnresolvedMethod;
+use crate::bytecode::unresolved::Unresolved;
 use crate::constant_pool::ConstantPool;
-use crate::fields::UnresolvedField;
-use crate::interfaces::UnresolvedInterfaces;
-use crate::methods::UnresolvedMethod;
-
-use crate::{w2, ByteReader, Class, Take, Unresolved};
 
 impl Take<Class> for ByteReader {
     fn take(&mut self) -> Result<Class, String> {

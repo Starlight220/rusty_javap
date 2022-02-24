@@ -1,5 +1,4 @@
-use crate::Take;
-use crate::{w1, w2, w4, w8, ByteReader};
+use crate::{w1, w2, w4, w8};
 use std::fmt::{Display, Formatter};
 use std::ops::Index;
 
@@ -101,78 +100,19 @@ pub enum CpInfo {
     Package { name_index: w2 },
 }
 
-impl CpInfo {
-    fn of(tag: &CpTag, bytes: &mut ByteReader) -> Result<CpInfo, String> {
-        use CpInfo::*;
-        return Ok(match tag {
-            CpTag::Package => Package {
-                name_index: bytes.take()?,
-            },
-            CpTag::Utf8 => {
-                let length: w2 = bytes.take()?;
-                let mut vec: Vec<w1> = vec![];
-                for _ in 0..length {
-                    vec.push(bytes.take()?)
-                }
-                Utf8 {
-                    string: std::string::String::from_utf8_lossy(vec.as_slice()).to_string(),
-                }
-            }
-            CpTag::Integer => Integer { int: bytes.take()? },
-            CpTag::Float => Float {
-                float: f32::from_bits(bytes.take()?),
-            },
-            CpTag::Long => Long {
-                long: double_utils::long(bytes.take()?, bytes.take()?),
-            },
-            CpTag::Double => Double {
-                double: double_utils::double(bytes.take()?, bytes.take()?),
-            },
-            CpTag::Class => Class {
-                name_index: bytes.take()?,
-            },
-            CpTag::String => String {
-                string_index: bytes.take()?,
-            },
-            CpTag::Fieldref => Fieldref {
-                class_index: bytes.take()?,
-                name_and_type_index: bytes.take()?,
-            },
-            CpTag::Methodref => Methodref {
-                class_index: bytes.take()?,
-                name_and_type_index: bytes.take()?,
-            },
-            CpTag::InterfaceMethodref => InterfaceMethodref {
-                class_index: bytes.take()?,
-                name_and_type_index: bytes.take()?,
-            },
-            CpTag::NameAndType => NameAndType {
-                name_index: bytes.take()?,
-                descriptor_index: bytes.take()?,
-            },
-            CpTag::MethodHandle => MethodHandle {
-                reference_kind: bytes.take()?,
-                reference_index: bytes.take()?,
-            },
-            CpTag::MethodType => MethodType {
-                descriptor_index: bytes.take()?,
-            },
-            CpTag::Dynamic => Dynamic {
-                bootstrap_method_attr_index: bytes.take()?,
-                name_and_type_index: bytes.take()?,
-            },
-            CpTag::InvokeDynamic => InvokeDynamic {
-                bootstrap_method_attr_index: bytes.take()?,
-                name_and_type_index: bytes.take()?,
-            },
-            CpTag::Module => Module {
-                name_index: bytes.take()?,
-            },
-        });
+#[derive(Debug)]
+pub struct Constant(pub CpTag, pub CpInfo);
+
+impl Display for CpTag {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
+}
+
+impl CpInfo {
 
     fn content_to_string(&self) -> String {
-        use CpInfo::*;
+        use crate::constant_pool::CpInfo::*;
         match self {
             Utf8 { string } => string.to_owned(),
             Integer { int: bytes } => format!("{}", bytes),
@@ -207,15 +147,6 @@ impl CpInfo {
     }
 }
 
-#[derive(Debug)]
-pub struct Constant(pub CpTag, pub CpInfo);
-
-impl Display for CpTag {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 impl Display for CpInfo {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         // FIXME: provide proper to_string impl
@@ -239,33 +170,6 @@ impl Display for Constant {
     }
 }
 
-impl Take<CpTag> for ByteReader {
-    fn take(&mut self) -> Result<CpTag, String> {
-        use CpTag::*;
-        let i: w1 = self.take()?;
-        match i {
-            1 => Ok(Utf8),
-            3 => Ok(Integer),
-            4 => Ok(Float),
-            5 => Ok(Long),
-            6 => Ok(Double),
-            7 => Ok(Class),
-            8 => Ok(String),
-            9 => Ok(Fieldref),
-            10 => Ok(Methodref),
-            11 => Ok(InterfaceMethodref),
-            12 => Ok(NameAndType),
-            15 => Ok(MethodHandle),
-            16 => Ok(MethodType),
-            17 => Ok(Dynamic),
-            18 => Ok(InvokeDynamic),
-            19 => Ok(Module),
-            20 => Ok(Package),
-            it @ _ => Err(format!("Unexpected Constant type ID `{it}`!", it = it)),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ConstantPool {
     pool: Vec<Option<Constant>>,
@@ -280,7 +184,7 @@ impl Index<w2> for ConstantPool {
 }
 
 impl ConstantPool {
-    fn new() -> ConstantPool {
+    pub(crate) fn new() -> ConstantPool {
         ConstantPool {
             pool: vec![Option::None],
         }
@@ -341,39 +245,12 @@ impl ConstantPool {
         }
     }
 
-    fn push_empty(&mut self) {
+    pub(crate) fn push_empty(&mut self) {
         self.pool.push(Option::None)
     }
 
-    fn push(&mut self, constant: Constant) {
+    pub(crate) fn push(&mut self, constant: Constant) {
         self.pool.push(Option::Some(constant))
-    }
-}
-
-impl Take<ConstantPool> for ByteReader {
-    fn take(&mut self) -> Result<ConstantPool, String> {
-        let constants_pool_count: w2 = self.take()?;
-        let mut pool = ConstantPool::new();
-        let mut skip: bool = false;
-        for _offset in 1..(constants_pool_count) {
-            if skip {
-                skip = false;
-                pool.push_empty();
-                continue;
-            }
-            let tag = self.take()?;
-
-            // Long and Double "swallow" another index
-            skip = match tag {
-                CpTag::Double | CpTag::Long => true,
-                _ => false,
-            };
-
-            let info = CpInfo::of(&tag, self)?;
-            let constant = Constant(tag, info);
-            pool.push(constant);
-        }
-        Ok(pool)
     }
 }
 
@@ -392,12 +269,15 @@ impl Display for ConstantPool {
     }
 }
 
-mod double_utils {
+pub(crate) mod double_utils {
     use crate::{w4, w8};
 
+    #[inline]
     pub(crate) fn long(high_bytes: w4, low_bytes: w4) -> w8 {
         ((high_bytes as w8) << 32) + low_bytes as u64
     }
+
+    #[inline]
     pub(crate) fn double(high_bytes: w4, low_bytes: w4) -> f64 {
         f64::from_bits(long(high_bytes, low_bytes))
     }

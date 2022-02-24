@@ -1,6 +1,6 @@
+use crate::bytecode::reader::{ByteReader, Take};
 use crate::model::class::Version;
 use crate::typedefs::*;
-use crate::{ByteReader, Take};
 
 impl Take<Version> for ByteReader {
     fn take(&mut self) -> Result<Version, String> {

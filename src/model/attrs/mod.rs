@@ -1,8 +1,8 @@
+pub mod constant_value;
+
 use crate::model::attrs::constant_value::ConstantValue;
 use crate::w2;
 use serde::{Deserialize, Serialize};
-
-pub(crate) mod constant_value;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum Attribute {

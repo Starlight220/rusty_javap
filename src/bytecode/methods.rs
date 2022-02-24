@@ -1,9 +1,9 @@
-use crate::attributes::UnresolvedAttribute;
+use crate::bytecode::attributes::UnresolvedAttribute;
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::bytecode::unresolved::Unresolved;
 use crate::constant_pool::ConstantPool;
-
-use crate::{w2, ByteReader, Take, Unresolved};
-
 use crate::model::method::{Method, MethodAccessModifier};
+use crate::w2;
 
 pub struct UnresolvedMethod {
     access_flags: Vec<MethodAccessModifier>,

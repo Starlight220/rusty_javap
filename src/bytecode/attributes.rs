@@ -1,6 +1,8 @@
 use crate::constant_pool::ConstantPool;
 use crate::model::attrs::Attribute;
-use crate::{model, w1, w2, w4, ByteReader, Take, Unresolved};
+use crate::{model, w1, w2, w4};
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::bytecode::unresolved::Unresolved;
 
 
 impl Attribute {

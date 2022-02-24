@@ -1,7 +1,9 @@
-use crate::attributes::UnresolvedAttribute;
+use crate::bytecode::attributes::UnresolvedAttribute;
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::bytecode::unresolved::Unresolved;
 use crate::constant_pool::ConstantPool;
 use crate::model::field::{Field, FieldAccessModifier};
-use crate::{w2, ByteReader, Take, Unresolved};
+use crate::w2;
 
 pub struct UnresolvedField {
     access_flags: Vec<FieldAccessModifier>,

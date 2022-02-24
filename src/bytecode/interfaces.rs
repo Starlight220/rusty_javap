@@ -1,7 +1,8 @@
 use crate::constant_pool::ConstantPool;
 use crate::model::interface::Interface;
-use crate::{w2, ByteReader, Take, Unresolved};
-
+use crate::w2;
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::bytecode::unresolved::Unresolved;
 
 pub type UnresolvedInterfaces = Vec<w2>;
 
