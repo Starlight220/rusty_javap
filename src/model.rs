@@ -1,6 +1,5 @@
+pub mod attrs;
 pub mod class;
-pub mod method;
 pub mod field;
 pub mod interface;
-pub mod attrs;
-
+pub mod method;

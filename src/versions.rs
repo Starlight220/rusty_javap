@@ -1,7 +1,6 @@
+use crate::model::class::Version;
 use crate::typedefs::*;
 use crate::{ByteReader, Take};
-use std::fmt::{Display, Formatter};
-use crate::model::class::Version;
 
 impl Take<Version> for ByteReader {
     fn take(&mut self) -> Result<Version, String> {
@@ -13,11 +12,7 @@ impl Take<Version> for ByteReader {
             return Err(format!("Wrong 'magic' field: `{:#X}`!", magic));
         }
 
-        let version = Version {
-            magic,
-            major,
-            minor,
-        };
+        let version = Version::new(magic, major, minor);
         Ok(version)
     }
 }

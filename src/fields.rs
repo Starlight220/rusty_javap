@@ -1,8 +1,7 @@
-use crate::access::FieldAccessModifier;
-use crate::attributes::{Attributes, UnresolvedAttribute};
+use crate::attributes::UnresolvedAttribute;
 use crate::constant_pool::ConstantPool;
-use crate::{container, w2, ByteReader, Take, Unresolved};
-use std::fmt::{Display, Formatter};
+use crate::model::field::{Field, FieldAccessModifier};
+use crate::{w2, ByteReader, Take, Unresolved};
 
 pub struct UnresolvedField {
     access_flags: Vec<FieldAccessModifier>,
@@ -44,14 +43,11 @@ impl Unresolved for UnresolvedField {
     type NeededToResolve = ConstantPool;
 
     fn resolve(self, constant_pool: &Self::NeededToResolve) -> Result<Self::Resolved, String> {
-        Ok(Field {
-            access_flags: self.access_flags,
-            name: constant_pool.get_utf8(self.name_index)?,
-            descriptor: constant_pool.get_utf8(self.descriptor_index)?,
-            attributes: self.attributes.resolve(constant_pool)?,
-        })
+        Ok(Field::new(
+            self.access_flags,
+            constant_pool.get_utf8(self.name_index)?,
+            constant_pool.get_utf8(self.descriptor_index)?,
+            self.attributes.resolve(constant_pool)?,
+        ))
     }
 }
-
-
-container!(Fields, Field);

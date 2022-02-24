@@ -1,31 +1,32 @@
-use serde::{Serialize, Deserialize};
+use crate::model::attrs::Attribute;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Field {
     access_flags: Vec<FieldAccessModifier>,
     name: String,
     descriptor: String, // TODO: add a descriptor struct?
-    attributes: Attributes,
+    attributes: Vec<Attribute>,
 }
 
-impl Display for Field {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        writeln!(f, "{}:", self.name)?;
-        writeln!(f, "\t\tDescriptor:\t{}", self.descriptor)?;
-        writeln!(f, "\t\tAccess:\t{:?}", self.access_flags)?;
-        writeln!(
-            f,
-            "\t\t{}",
-            format!("{}", self.attributes).replace("\t", "\t\t\t")
-        )?;
-        write!(f, "")
+impl Field {
+    pub fn new(
+        access_flags: Vec<FieldAccessModifier>,
+        name: String,
+        descriptor: String, // TODO: add a descriptor struct?
+        attributes: Vec<Attribute>,
+    ) -> Field {
+        Field {
+            access_flags,
+            name,
+            descriptor,
+            attributes,
+        }
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum FieldAccessModifier {
     PUBLIC = 0x0001,
     PRIVATE = 0x0002,

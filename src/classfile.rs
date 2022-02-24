@@ -1,12 +1,10 @@
-use crate::access::ClassAccessModifier;
-use crate::attributes::{Attributes, UnresolvedAttribute};
+use crate::attributes::UnresolvedAttribute;
 use crate::constant_pool::ConstantPool;
-use crate::fields::{Fields, UnresolvedField};
-use crate::interfaces::{Interfaces, UnresolvedInterfaces};
-use crate::methods::{Methods, UnresolvedMethod};
-use crate::model::class::Version;
-use crate::{ByteReader, Take, Unresolved, w2};
-use std::fmt::{Display, Formatter};
+use crate::fields::UnresolvedField;
+use crate::interfaces::UnresolvedInterfaces;
+use crate::methods::UnresolvedMethod;
+
+use crate::{w2, ByteReader, Class, Take, Unresolved};
 
 impl Take<Class> for ByteReader {
     fn take(&mut self) -> Result<Class, String> {
@@ -36,9 +34,8 @@ impl Take<Class> for ByteReader {
         let unresolved_attributes: Vec<UnresolvedAttribute> = self.take()?;
         let attributes = unresolved_attributes.resolve(&constant_pool)?;
 
-        Ok(Class {
+        Ok(Class::new(
             version,
-            constant_pool,
             access_flags,
             this_class,
             super_class,
@@ -46,6 +43,6 @@ impl Take<Class> for ByteReader {
             fields,
             methods,
             attributes,
-        })
+        ))
     }
 }

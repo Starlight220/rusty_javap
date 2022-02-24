@@ -1,7 +1,6 @@
 use crate::constant_pool::ConstantPool;
-use crate::{container, w1, w2, w4, ByteReader, Take, Unresolved};
-use std::fmt::{Display, Formatter};
 use crate::model::attrs::Attribute;
+use crate::{model, w1, w2, w4, ByteReader, Take, Unresolved};
 
 
 impl Attribute {
@@ -14,7 +13,9 @@ impl Attribute {
         use Attribute::*;
         Ok(match name.as_str() {
             stringify!(ConstantValue) => {
-                ConstantValue(constant_pool.get_constant_as_string(bytes.take()?)?)
+                ConstantValue(model::attrs::constant_value::ConstantValue::String(
+                    constant_pool.get_constant_as_string(bytes.take()?)?,
+                ))
             }
             stringify!(Synthetic) => Synthetic,
             stringify!(Deprecated) => Deprecated,
@@ -57,7 +58,7 @@ impl Take<Vec<UnresolvedAttribute>> for ByteReader {
 }
 
 impl Unresolved for Vec<UnresolvedAttribute> {
-    type Resolved = Attributes;
+    type Resolved = Vec<Attribute>;
     type NeededToResolve = ConstantPool;
 
     fn resolve(self, constant_pool: &Self::NeededToResolve) -> Result<Self::Resolved, String> {
@@ -72,5 +73,3 @@ impl Unresolved for Vec<UnresolvedAttribute> {
         Ok(resolved.into())
     }
 }
-
-container!(Attributes, Attribute);

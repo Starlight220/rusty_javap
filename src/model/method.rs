@@ -1,8 +1,7 @@
-use serde::{Serialize, Deserialize};
 use crate::model::attrs::Attribute;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Method {
     pub access_flags: Vec<MethodAccessModifier>,
     pub name: String,
@@ -10,8 +9,7 @@ pub struct Method {
     pub attributes: Vec<Attribute>,
 }
 
-#[derive(Debug, Copy, Clone)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum MethodAccessModifier {
     PUBLIC = 0x0001,
     PRIVATE = 0x0002,

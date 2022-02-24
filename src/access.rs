@@ -1,8 +1,8 @@
-use crate::*;
-use std::iter::FromIterator;
 use crate::model::class::ClassAccessModifier;
 use crate::model::field::FieldAccessModifier;
 use crate::model::method::MethodAccessModifier;
+use crate::*;
+use std::iter::FromIterator;
 
 impl Take<Vec<ClassAccessModifier>> for ByteReader {
     fn take(&mut self) -> Result<Vec<ClassAccessModifier>, String> {
@@ -50,7 +50,7 @@ impl Take<Vec<MethodAccessModifier>> for ByteReader {
             STRICT,
             SYNTHETIC,
         ]
-            .into_iter();
+        .into_iter();
         Ok(Vec::from_iter(
             modifiers.filter(|&acc| (acc as i32 as w2) & flags != 0),
         ))

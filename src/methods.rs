@@ -1,8 +1,8 @@
-use crate::attributes::{Attributes, UnresolvedAttribute};
+use crate::attributes::UnresolvedAttribute;
 use crate::constant_pool::ConstantPool;
-use crate::container;
-use crate::{ByteReader, Take, Unresolved, w2};
-use std::fmt::{Display, Formatter};
+
+use crate::{w2, ByteReader, Take, Unresolved};
+
 use crate::model::method::{Method, MethodAccessModifier};
 
 pub struct UnresolvedMethod {
@@ -53,5 +53,3 @@ impl Unresolved for UnresolvedMethod {
         })
     }
 }
-
-container!(Methods, Method);

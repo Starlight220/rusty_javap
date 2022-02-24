@@ -5,12 +5,12 @@ mod constant_pool;
 mod fields;
 mod interfaces;
 mod methods;
+mod model;
 mod reader;
 mod typedefs;
 mod versions;
-mod model;
 
-use crate::classfile::Class;
+use crate::model::class::Class;
 use crate::reader::*;
 use crate::typedefs::*;
 use std::fs::read;
@@ -27,6 +27,6 @@ fn main() {
 
     match bytes.take() {
         Err(error) => println!("{}", error),
-        Ok::<Class, _>(class) => println!("{}", class),
+        Ok::<Class, _>(class) => println!("{}", serde_json::to_string(&class).unwrap()),
     }
 }

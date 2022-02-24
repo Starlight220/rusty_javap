@@ -1,10 +1,10 @@
-use serde::{Serialize, Deserialize};
 use crate::model::attrs::constant_value::ConstantValue;
+use crate::w2;
+use serde::{Deserialize, Serialize};
 
-mod constant_value;
+pub(crate) mod constant_value;
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Attribute {
     ConstantValue(ConstantValue),
     // Code(UnresolvedCode),

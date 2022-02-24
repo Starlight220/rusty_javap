@@ -1,15 +1,14 @@
-use std::vec::Vec;
-use core::fmt::{Display, Formatter};
-use core::option::Option;
-use crate::{w2, w4};
 use crate::model::attrs::Attribute;
 use crate::model::field::Field;
 use crate::model::interface::Interface;
 use crate::model::method::Method;
-use serde::{Serialize, Deserialize};
+use crate::{w2, w4};
+use core::fmt::{Display, Formatter};
+use core::option::Option;
+use serde::{Deserialize, Serialize};
+use std::vec::Vec;
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Class {
     version: Version,
     access_flags: Vec<ClassAccessModifier>,
@@ -21,12 +20,45 @@ pub struct Class {
     attributes: Vec<Attribute>,
 }
 
-#[derive(Debug)]
-#[derive(Serialize, Deserialize)]
+impl Class {
+    pub fn new(
+        version: Version,
+        access_flags: Vec<ClassAccessModifier>,
+        this_class: String,
+        super_class: Option<String>,
+        interfaces: Vec<Interface>,
+        fields: Vec<Field>,
+        methods: Vec<Method>,
+        attributes: Vec<Attribute>,
+    ) -> Class {
+        Class {
+            version,
+            access_flags,
+            this_class,
+            super_class,
+            interfaces,
+            fields,
+            methods,
+            attributes,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Version {
     magic: w4,
     major: w2,
     minor: w2,
+}
+
+impl Version {
+    pub fn new(magic: w4, major: w2, minor: w2) -> Version {
+        Version {
+            magic,
+            major,
+            minor,
+        }
+    }
 }
 
 impl Display for Version {
@@ -39,8 +71,7 @@ impl Display for Version {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum ClassAccessModifier {
     PUBLIC = 0x0001,
     FINAL = 0x0010,
