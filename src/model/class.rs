@@ -46,9 +46,9 @@ impl Class {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Version {
-    magic: w4,
-    major: w2,
-    minor: w2,
+    pub magic: w4,
+    pub major: w2,
+    pub minor: w2,
 }
 
 impl Version {
@@ -82,6 +82,15 @@ pub enum ClassAccessModifier {
     ANNOTATION = 0x2000,
     ENUM = 0x4000,
     MODULE = 0x8000,
+}
+
+impl ClassAccessModifier {
+    pub fn variants() -> Vec<Self> {
+        use ClassAccessModifier::*;
+        vec![
+            PUBLIC, FINAL, SUPER, INTERFACE, ABSTRACT, SYNTHETIC, ANNOTATION, ENUM, MODULE,
+        ]
+    }
 }
 
 impl Display for ClassAccessModifier {

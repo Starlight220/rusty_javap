@@ -39,6 +39,15 @@ pub enum FieldAccessModifier {
     ENUM = 0x4000,
 }
 
+impl FieldAccessModifier {
+    pub fn variants() -> Vec<Self> {
+        use FieldAccessModifier::*;
+        vec![
+            PUBLIC, PRIVATE, PROTECTED, STATIC, FINAL, VOLATILE, TRANSIENT, SYNTHETIC, ENUM,
+        ]
+    }
+}
+
 impl Display for FieldAccessModifier {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)

@@ -8,3 +8,4 @@ pub mod reader;
 pub mod interfaces;
 pub mod fields;
 pub mod versions;
+pub mod writer;

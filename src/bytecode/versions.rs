@@ -1,4 +1,5 @@
 use crate::bytecode::reader::{ByteReader, Take};
+use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::model::class::Version;
 use crate::typedefs::*;
 
@@ -14,5 +15,14 @@ impl Take<Version> for ByteReader {
 
         let version = Version::new(magic, major, minor);
         Ok(version)
+    }
+}
+
+impl Writeable for Version {
+    fn write(&self, writer: &mut ByteWriter) {
+        let Version {magic, major, minor} = self;
+        writer.write(magic);
+        writer.write(major);
+        writer.write(minor);
     }
 }
