@@ -94,7 +94,7 @@ impl Take<ConstantPool> for ByteReader {
 impl Writeable for ConstantPool {
     fn write(self, writer: &mut ByteWriter) {
         let mut inner_writer: ByteWriter = ByteWriter::new();
-        for index in 0..self.len() {
+        for index in 1..self.len() {
             match &self[index as w2] {
                 Option::None => {}
                 Option::Some(Constant(tag, info)) => {

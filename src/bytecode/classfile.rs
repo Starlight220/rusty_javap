@@ -56,38 +56,31 @@ impl Writeable for Class {
         let access_flags = self.access_flags;
 
         let this_class_index: w2 = {
-            let class_name_index = {
-                constant_pool.push(Constant(
-                    CpTag::Utf8,
-                    CpInfo::Utf8 {
-                        string: self.this_class,
-                    },
-                ));
-                constant_pool.len() as w2
-            };
+            let class_name_index = constant_pool.push(Constant(
+                CpTag::Utf8,
+                CpInfo::Utf8 {
+                    string: self.this_class,
+                },
+            ));
             constant_pool.push(Constant(
                 CpTag::Class,
                 CpInfo::Class {
                     name_index: class_name_index,
                 },
-            ));
-            constant_pool.len() as w2
+            ))
         };
 
         let super_class_index: w2 = match self.super_class {
             Option::None => 0,
             Option::Some(class_name) => {
-                let class_name_index = {
+                let class_name_index =
                     constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: class_name }));
-                    constant_pool.len() as w2
-                };
                 constant_pool.push(Constant(
                     CpTag::Class,
                     CpInfo::Class {
                         name_index: class_name_index,
                     },
-                ));
-                constant_pool.len() as w2
+                ))
             }
         };
 

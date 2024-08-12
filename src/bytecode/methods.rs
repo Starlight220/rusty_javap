@@ -67,21 +67,19 @@ impl Unresolved for UnresolvedMethod {
     }
 
     fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
-        constant_pool.push(Constant(
+        let name_index = constant_pool.push(Constant(
             CpTag::Utf8,
             CpInfo::Utf8 {
                 string: resolved.name,
             },
         ));
-        let name_index = constant_pool.len();
 
-        constant_pool.push(Constant(
+        let descriptor_index = constant_pool.push(Constant(
             CpTag::Utf8,
             CpInfo::Utf8 {
                 string: resolved.descriptor,
             },
         ));
-        let descriptor_index = constant_pool.len();
 
         Self {
             access_flags: resolved.access_flags,

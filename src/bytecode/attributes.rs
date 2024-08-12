@@ -103,16 +103,12 @@ impl Unresolved for UnresolvedAttribute {
     }
 
     fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
-        let name_index = {
-            let name = Constant(
-                CpTag::Utf8,
-                CpInfo::Utf8 {
-                    string: resolved.name(),
-                },
-            );
-            constant_pool.push(name);
-            constant_pool.len()
-        } as w2;
+        let name_index = constant_pool.push(Constant(
+            CpTag::Utf8,
+            CpInfo::Utf8 {
+                string: resolved.name(),
+            },
+        ));
 
         let info: Vec<w1> = match resolved {
             Attribute::ConstantValue(it) => {
@@ -130,25 +126,21 @@ impl Unresolved for UnresolvedAttribute {
                         Constant(CpTag::Double, CpInfo::Double { double })
                     }
                     attrs::constant_value::ConstantValue::String(string) => {
-                        constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string }));
-                        let string_index = constant_pool.len() as w2;
+                        let string_index = constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string }));
                         Constant(CpTag::String, CpInfo::String { string_index })
                     }
                 };
-                constant_pool.push(constant);
-
-                (constant_pool.len() as w2).to_be_bytes().to_vec()
+                constant_pool.push(constant).to_be_bytes().to_vec()
             }
-            Attribute::SourceFile(source_file_name) => {
-                constant_pool.push(Constant(
+            Attribute::SourceFile(source_file_name) => constant_pool
+                .push(Constant(
                     CpTag::Utf8,
                     CpInfo::Utf8 {
                         string: source_file_name,
                     },
-                ));
-
-                (constant_pool.len() as w2).to_be_bytes().to_vec()
-            }
+                ))
+                .to_be_bytes()
+                .to_vec(),
             Attribute::Synthetic => vec![],
             Attribute::Deprecated => vec![],
             Attribute::Signature { signature_index } => signature_index.to_be_bytes().to_vec(),

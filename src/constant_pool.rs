@@ -188,8 +188,8 @@ impl ConstantPool {
             pool: vec![Option::None],
         }
     }
-    pub fn len(&self) -> usize {
-        self.pool.len()
+    pub fn len(&self) -> w2 {
+        self.pool.len() as w2
     }
 
     pub fn get_class_name(&self, class_index: w2) -> Result<String, String> {
@@ -251,8 +251,10 @@ impl ConstantPool {
         self.pool.push(Option::None)
     }
 
-    pub(crate) fn push(&mut self, constant: Constant) {
-        self.pool.push(Option::Some(constant))
+    /// Appends a constant to the pool and returns its index
+    pub(crate) fn push(&mut self, constant: Constant) -> w2 {
+        self.pool.push(Option::Some(constant));
+        return self.len() - 1; // Last (= currently-added) index is len - 1
     }
 }
 

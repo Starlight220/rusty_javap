@@ -24,16 +24,14 @@ impl Unresolved for UnresolvedInterfaces {
     fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
         let mut unresolved = UnresolvedInterfaces::default();
         for Interface(interface) in resolved {
-            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: interface }));
-            let class_name_index = constant_pool.len() as w2;
+            let class_name_index = constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: interface }));
 
-            constant_pool.push(Constant(
+            let class_index = constant_pool.push(Constant(
                 CpTag::Class,
                 CpInfo::Class {
                     name_index: class_name_index,
                 },
             ));
-            let class_index = constant_pool.len() as w2;
 
             unresolved.push(class_index);
         }
