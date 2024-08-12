@@ -9,7 +9,8 @@ fn main() {
     let class: Class = serde_json::from_slice(&class_json).unwrap();
 
     let outfile = Path::new("./data/Example.out.class");
-    let mut class_bytes: ByteWriter = ByteWriter::new();
-    class_bytes.write::<Class>(&class);
-    fs::write(outfile, serde_json::to_string(&class).unwrap()).unwrap();
+    let mut writer: ByteWriter = ByteWriter::new();
+    writer.write::<Class>(class);
+    let class_bytes: Vec<u8> = writer.into();
+    fs::write(outfile, class_bytes).unwrap();
 }
