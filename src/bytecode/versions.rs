@@ -26,7 +26,7 @@ impl Writeable for Version {
             minor,
         } = self;
         writer.write(magic);
-        writer.write(major);
         writer.write(minor);
+        writer.write(major);
     }
 }
