@@ -28,6 +28,12 @@ impl From<Vec<w1>> for ByteReader {
     }
 }
 
+impl ByteReader {
+    pub fn deplete(self) -> Vec<w1> {
+        self.buffer[self.ptr..].to_vec()
+    }
+}
+
 macro_rules! impl_read_for {
     ($t:ty, $width:expr) => {
         impl ByteSize for $t {

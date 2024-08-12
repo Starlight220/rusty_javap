@@ -3,7 +3,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Index;
 
 // TODO: replace discriminators with fields
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Clone, Copy)]
 pub enum CpTag {
     /// string (usually referenced by other constants)
     Utf8 = 1,
@@ -41,7 +41,7 @@ pub enum CpTag {
     Package = 20,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum CpInfo {
     /// string (usually referenced by other constants)
     Utf8 { string: String }, // FIXME: find a different type for bytes
@@ -110,7 +110,6 @@ impl Display for CpTag {
 }
 
 impl CpInfo {
-
     fn content_to_string(&self) -> String {
         use crate::constant_pool::CpInfo::*;
         match self {
@@ -188,6 +187,9 @@ impl ConstantPool {
         ConstantPool {
             pool: vec![Option::None],
         }
+    }
+    pub fn len(&self) -> usize {
+        self.pool.len()
     }
 
     pub fn get_class_name(&self, class_index: w2) -> Result<String, String> {
@@ -268,7 +270,6 @@ impl Display for ConstantPool {
         writeln!(f, "")
     }
 }
-
 pub(crate) mod double_utils {
     use crate::{w4, w8};
 
@@ -280,5 +281,17 @@ pub(crate) mod double_utils {
     #[inline]
     pub(crate) fn double(high_bytes: w4, low_bytes: w4) -> f64 {
         f64::from_bits(long(high_bytes, low_bytes))
+    }
+
+    #[inline]
+    pub(crate) fn long2bytes(long: w8) -> (w4, w4) {
+        let high_bytes = (long >> 32) as w4;
+        let low_bytes = (long & 0xFFFF) as w4;
+        (high_bytes, low_bytes)
+    }
+
+    #[inline]
+    pub(crate) fn double2bytes(double: f64) -> (w4, w4) {
+        long2bytes(f64::to_bits(double))
     }
 }

@@ -24,3 +24,22 @@ pub enum MethodAccessModifier {
     STRICT = 0x0800,
     SYNTHETIC = 0x1000,
 }
+impl MethodAccessModifier {
+    pub fn variants() -> Vec<Self> {
+        use MethodAccessModifier::*;
+        vec![
+            PUBLIC,
+            PRIVATE,
+            PROTECTED,
+            STATIC,
+            FINAL,
+            SYNCHRONIZED,
+            BRIDGE,
+            VARARGS,
+            NATIVE,
+            ABSTRACT,
+            STRICT,
+            SYNTHETIC,
+        ]
+    }
+}

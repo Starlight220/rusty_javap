@@ -1,8 +1,9 @@
-use crate::constant_pool::ConstantPool;
-use crate::model::interface::Interface;
-use crate::w2;
 use crate::bytecode::reader::{ByteReader, Take};
 use crate::bytecode::unresolved::Unresolved;
+use crate::bytecode::writer::{ByteWriter, Writeable};
+use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
+use crate::model::interface::Interface;
+use crate::w2;
 
 pub type UnresolvedInterfaces = Vec<w2>;
 
@@ -19,6 +20,25 @@ impl Unresolved for UnresolvedInterfaces {
 
         Ok(interfaces)
     }
+
+    fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
+        let mut unresolved = UnresolvedInterfaces::default();
+        for Interface(interface) in resolved {
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: interface }));
+            let class_name_index = constant_pool.len() as w2;
+
+            constant_pool.push(Constant(
+                CpTag::Class,
+                CpInfo::Class {
+                    name_index: class_name_index,
+                },
+            ));
+            let class_index = constant_pool.len() as w2;
+
+            unresolved.push(class_index);
+        }
+        return unresolved;
+    }
 }
 
 impl Take<UnresolvedInterfaces> for ByteReader {
@@ -29,5 +49,14 @@ impl Take<UnresolvedInterfaces> for ByteReader {
             interfaces.push(self.take()?)
         }
         return Ok(interfaces);
+    }
+}
+
+impl Writeable for UnresolvedInterfaces {
+    fn write(self, writer: &mut ByteWriter) {
+        writer.write(self.len() as w2);
+        for interface in self {
+            writer.write(interface)
+        }
     }
 }

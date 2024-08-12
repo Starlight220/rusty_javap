@@ -1,7 +1,8 @@
 use crate::bytecode::attributes::UnresolvedAttribute;
 use crate::bytecode::reader::{ByteReader, Take};
 use crate::bytecode::unresolved::Unresolved;
-use crate::constant_pool::ConstantPool;
+use crate::bytecode::writer::{ByteWriter, Writeable};
+use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 use crate::model::method::{Method, MethodAccessModifier};
 use crate::w2;
 
@@ -40,6 +41,18 @@ impl Take<Vec<UnresolvedMethod>> for ByteReader {
     }
 }
 
+impl Writeable for Vec<UnresolvedMethod> {
+    fn write(self, writer: &mut ByteWriter) {
+        writer.write(self.len() as w2);
+        for method in self {
+            writer.write(method.access_flags);
+            writer.write(method.name_index);
+            writer.write(method.descriptor_index);
+            writer.write(method.attributes);
+        }
+    }
+}
+
 impl Unresolved for UnresolvedMethod {
     type Resolved = Method;
     type NeededToResolve = ConstantPool;
@@ -51,5 +64,30 @@ impl Unresolved for UnresolvedMethod {
             descriptor: constant_pool.get_utf8(self.descriptor_index)?,
             attributes: self.attributes.resolve(constant_pool)?,
         })
+    }
+
+    fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
+        constant_pool.push(Constant(
+            CpTag::Utf8,
+            CpInfo::Utf8 {
+                string: resolved.name,
+            },
+        ));
+        let name_index = constant_pool.len();
+
+        constant_pool.push(Constant(
+            CpTag::Utf8,
+            CpInfo::Utf8 {
+                string: resolved.descriptor,
+            },
+        ));
+        let descriptor_index = constant_pool.len();
+
+        Self {
+            access_flags: resolved.access_flags,
+            name_index: name_index as w2,
+            descriptor_index: descriptor_index as w2,
+            attributes: Unresolved::unresolve(resolved.attributes, constant_pool),
+        }
     }
 }

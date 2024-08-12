@@ -4,10 +4,10 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Field {
-    access_flags: Vec<FieldAccessModifier>,
-    name: String,
-    descriptor: String, // TODO: add a descriptor struct?
-    attributes: Vec<Attribute>,
+    pub access_flags: Vec<FieldAccessModifier>,
+    pub name: String,
+    pub descriptor: String, // TODO: add a descriptor struct?
+    pub attributes: Vec<Attribute>,
 }
 
 impl Field {

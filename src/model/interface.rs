@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Interface(String);
+pub struct Interface(pub String);
 
 impl Interface {
     pub fn new(str: String) -> Interface {

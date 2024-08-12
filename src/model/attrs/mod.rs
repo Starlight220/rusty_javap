@@ -35,5 +35,8 @@ pub enum Attribute {
     // NestHost,
     // NestMembers,
     #[allow(non_camel_case_types)]
-    UNIMPLEMENTED_ATTRIBUTE_TODO, // FIXME
+    UNIMPLEMENTED_ATTRIBUTE_TODO {
+        name: String,
+        info: Vec<u8>,
+    }, // FIXME
 }

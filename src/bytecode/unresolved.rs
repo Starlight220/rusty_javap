@@ -3,6 +3,7 @@ pub trait Unresolved {
     type NeededToResolve;
 
     fn resolve(self, _: &Self::NeededToResolve) -> Result<Self::Resolved, String>;
+    fn unresolve(resolved: Self::Resolved, _: &mut Self::NeededToResolve) -> Self;
 }
 
 impl<T: Unresolved> Unresolved for Vec<T> {
@@ -15,5 +16,12 @@ impl<T: Unresolved> Unresolved for Vec<T> {
             resolved.push(unresolved.resolve(needed_to_resolve)?)
         }
         Ok(resolved)
+    }
+
+    fn unresolve(resolved: Self::Resolved, needed_to_resolve: &mut Self::NeededToResolve) -> Self {
+        return resolved
+            .into_iter()
+            .map(|item| Unresolved::unresolve(item, needed_to_resolve))
+            .collect();
     }
 }

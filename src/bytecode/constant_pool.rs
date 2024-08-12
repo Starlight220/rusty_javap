@@ -1,12 +1,17 @@
+use crate::bytecode::reader::{ByteReader, Take};
+use crate::constant_pool::{double_utils, Constant, ConstantPool, CpInfo, CpTag};
+use crate::typedefs::{w1, w2};
 use core::result::Result;
 use core::result::Result::Ok;
-use crate::bytecode::reader::{ByteReader, Take};
-use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
-use crate::typedefs::{w1, w2};
+
+use super::writer::{ByteWriter, Writeable};
 
 impl Take<CpTag> for ByteReader {
     fn take(&mut self) -> Result<CpTag, String> {
-        use CpTag::{Class, Double, Dynamic, Fieldref, Float, Integer, InterfaceMethodref, InvokeDynamic, Long, MethodHandle, Methodref, MethodType, Module, NameAndType, Package, String, Utf8};
+        use CpTag::{
+            Class, Double, Dynamic, Fieldref, Float, Integer, InterfaceMethodref, InvokeDynamic,
+            Long, MethodHandle, MethodType, Methodref, Module, NameAndType, Package, String, Utf8,
+        };
         let i: w1 = self.take()?;
         match i {
             1 => Ok(Utf8),
@@ -28,6 +33,35 @@ impl Take<CpTag> for ByteReader {
             20 => Ok(Package),
             it @ _ => Err(format!("Unexpected Constant type ID `{it}`!", it = it)),
         }
+    }
+}
+
+impl Writeable for CpTag {
+    fn write(self, writer: &mut ByteWriter) {
+        use CpTag::{
+            Class, Double, Dynamic, Fieldref, Float, Integer, InterfaceMethodref, InvokeDynamic,
+            Long, MethodHandle, MethodType, Methodref, Module, NameAndType, Package, String, Utf8,
+        };
+        let byte: w2 = match self {
+            Utf8 => 1u16,
+            Integer => 3u16,
+            Float => 4u16,
+            Long => 5u16,
+            Double => 6u16,
+            Class => 7u16,
+            String => 8u16,
+            Fieldref => 9u16,
+            Methodref => 10u16,
+            InterfaceMethodref => 11u16,
+            NameAndType => 12u16,
+            MethodHandle => 15u16,
+            MethodType => 16u16,
+            Dynamic => 17u16,
+            InvokeDynamic => 18u16,
+            Module => 19u16,
+            Package => 20u16,
+        };
+        writer.write(byte)
     }
 }
 
@@ -57,11 +91,109 @@ impl Take<ConstantPool> for ByteReader {
         Ok(pool)
     }
 }
+impl Writeable for ConstantPool {
+    fn write(self, writer: &mut ByteWriter) {
+        let mut inner_writer: ByteWriter = ByteWriter::new();
+        for index in 0..self.len() {
+            match &self[index as w2] {
+                Option::None => {}
+                Option::Some(Constant(tag, info)) => {
+                    inner_writer.write(*tag);
+                    inner_writer.write(info.clone());
+                }
+            }
+        }
+        let constant_pool_bytes: Vec<w1> = inner_writer.into();
+        writer.write(self.len() as w2);
+        for byte in constant_pool_bytes {
+            writer.write_byte(byte);
+        }
+    }
+}
+
+impl Writeable for CpInfo {
+    fn write(self, writer: &mut ByteWriter) {
+        match self {
+            CpInfo::Package { name_index } => writer.write(name_index),
+            CpInfo::Utf8 { string } => {
+                writer.write(string.len() as w2);
+                for byte in string.bytes() {
+                    writer.write(byte);
+                }
+            }
+            CpInfo::Integer { int } => writer.write(int),
+            CpInfo::Float { float } => writer.write(f32::to_bits(float)),
+            CpInfo::Long { long } => {
+                let (high, low) = double_utils::long2bytes(long);
+                writer.write(high);
+                writer.write(low);
+            }
+            CpInfo::Double { double } => {
+                let (high, low) = double_utils::double2bytes(double);
+                writer.write(high);
+                writer.write(low);
+            }
+            CpInfo::Class { name_index } => writer.write(name_index),
+            CpInfo::String { string_index } => writer.write(string_index),
+            CpInfo::Fieldref {
+                class_index,
+                name_and_type_index,
+            } => {
+                writer.write(class_index);
+                writer.write(name_and_type_index);
+            }
+            CpInfo::Methodref {
+                class_index,
+                name_and_type_index,
+            } => {
+                writer.write(class_index);
+                writer.write(name_and_type_index);
+            }
+            CpInfo::InterfaceMethodref {
+                class_index,
+                name_and_type_index,
+            } => {
+                writer.write(class_index);
+                writer.write(name_and_type_index);
+            }
+            CpInfo::NameAndType {
+                name_index,
+                descriptor_index,
+            } => {
+                writer.write(name_index);
+                writer.write(descriptor_index);
+            }
+            CpInfo::MethodHandle {
+                reference_kind,
+                reference_index,
+            } => {
+                writer.write(reference_kind);
+                writer.write(reference_index);
+            }
+            CpInfo::MethodType { descriptor_index } => writer.write(descriptor_index),
+            CpInfo::Dynamic {
+                bootstrap_method_attr_index,
+                name_and_type_index,
+            } => {
+                writer.write(bootstrap_method_attr_index);
+                writer.write(name_and_type_index);
+            }
+            CpInfo::InvokeDynamic {
+                bootstrap_method_attr_index,
+                name_and_type_index,
+            } => {
+                writer.write(bootstrap_method_attr_index);
+                writer.write(name_and_type_index);
+            }
+            CpInfo::Module { name_index } => writer.write(name_index),
+        }
+    }
+}
 
 impl CpInfo {
     fn of(tag: &CpTag, bytes: &mut ByteReader) -> Result<CpInfo, String> {
-        use crate::constant_pool::CpInfo::*;
         use crate::constant_pool::double_utils;
+        use crate::constant_pool::CpInfo::*;
         return Ok(match tag {
             CpTag::Package => Package {
                 name_index: bytes.take()?,

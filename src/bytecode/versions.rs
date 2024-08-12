@@ -19,8 +19,12 @@ impl Take<Version> for ByteReader {
 }
 
 impl Writeable for Version {
-    fn write(&self, writer: &mut ByteWriter) {
-        let Version {magic, major, minor} = self;
+    fn write(self, writer: &mut ByteWriter) {
+        let Version {
+            magic,
+            major,
+            minor,
+        } = self;
         writer.write(magic);
         writer.write(major);
         writer.write(minor);
