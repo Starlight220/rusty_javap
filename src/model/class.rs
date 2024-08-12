@@ -10,14 +10,14 @@ use std::vec::Vec;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Class {
-    version: Version,
-    access_flags: Vec<ClassAccessModifier>,
-    this_class: String,
-    super_class: Option<String>,
-    interfaces: Vec<Interface>,
-    fields: Vec<Field>,
-    methods: Vec<Method>,
-    attributes: Vec<Attribute>,
+    pub version: Version,
+    pub access_flags: Vec<ClassAccessModifier>,
+    pub this_class: String,
+    pub super_class: Option<String>,
+    pub interfaces: Vec<Interface>,
+    pub fields: Vec<Field>,
+    pub methods: Vec<Method>,
+    pub attributes: Vec<Attribute>,
 }
 
 impl Class {
