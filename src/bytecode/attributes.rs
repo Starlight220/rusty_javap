@@ -2,8 +2,10 @@ use crate::bytecode::reader::{ByteReader, Take};
 use crate::bytecode::unresolved::Unresolved;
 use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
+use crate::model::attrs;
+use crate::model::attrs::line_number_table::LineNumberTableElement;
 use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
-use crate::model::attrs::{self, Attribute};
+use crate::model::attrs::Attribute;
 use crate::{model, w1, w2, w4};
 
 impl Attribute {
@@ -19,6 +21,20 @@ impl Attribute {
                 ConstantValue(model::attrs::constant_value::ConstantValue::String(
                     constant_pool.get_constant_as_string(bytes.take()?)?,
                 ))
+            }
+            stringify!(LineNumberTable) => {
+                let line_number_table_length: w2 = bytes.take()?;
+                let mut line_number_table: Vec<LineNumberTableElement> =
+                    Vec::with_capacity(line_number_table_length.into());
+                for _ in 0..line_number_table_length {
+                    let start_pc: w2 = bytes.take()?;
+                    let line_number: w2 = bytes.take()?;
+                    line_number_table.push(LineNumberTableElement {
+                        start_pc,
+                        line_number,
+                    });
+                }
+                LineNumberTable(line_number_table)
             }
             stringify!(MethodParameters) => {
                 let parameters_count: w1 = bytes.take()?;
@@ -53,6 +69,7 @@ impl Attribute {
         match self {
             Attribute::ConstantValue(_) => stringify!(ConstantValue).to_string(),
             Attribute::SourceFile(_) => stringify!(SourceFile).to_string(),
+            Attribute::LineNumberTable(_) => stringify!(LineNumberTable).to_string(),
             Attribute::Synthetic => stringify!(Synthetic).to_string(),
             Attribute::Deprecated => stringify!(Deprecated).to_string(),
             Attribute::Signature { .. } => stringify!(Signature).to_string(),
@@ -149,6 +166,20 @@ impl Unresolved for UnresolvedAttribute {
                     }
                 };
                 constant_pool.push(constant).to_be_bytes().to_vec()
+            }
+            Attribute::LineNumberTable(line_number_table) => {
+                let mut writer = ByteWriter::new();
+                writer.write(line_number_table.len() as w2);
+                for LineNumberTableElement {
+                    start_pc,
+                    line_number,
+                } in line_number_table
+                {
+                    writer.write(start_pc);
+                    writer.write(line_number);
+                }
+
+                writer.into()
             }
             Attribute::MethodParameters(method_parameters) => {
                 let mut writer = ByteWriter::new();

@@ -1,7 +1,9 @@
 pub mod constant_value;
+pub mod line_number_table;
 pub mod method_parameters;
 
 use crate::model::attrs::constant_value::ConstantValue;
+use crate::model::attrs::line_number_table::LineNumberTable;
 use crate::model::attrs::method_parameters::MethodParameters;
 use crate::w2;
 use serde::{Deserialize, Serialize};
@@ -12,7 +14,7 @@ pub enum Attribute {
     // Code(UnresolvedCode),
     // Exceptions,
     SourceFile(String),
-    // LineNumberTable,
+    LineNumberTable(LineNumberTable),
     // LocalVariableTable,
     // InnerClasses,
     Synthetic,
