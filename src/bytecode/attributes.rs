@@ -5,6 +5,7 @@ use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 use crate::model::attrs;
 use crate::model::attrs::code;
 use crate::model::attrs::line_number_table::LineNumberTableElement;
+use crate::model::attrs::local_variable_table::LocalVariableTableElement;
 use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
 use crate::model::attrs::Attribute;
 use crate::{model, w1, w2, w4};
@@ -36,6 +37,28 @@ impl Attribute {
                     });
                 }
                 LineNumberTable(line_number_table)
+            }
+            stringify!(LocalVariableTable) => {
+                let local_variable_table_length: w2 = bytes.take()?;
+                let mut local_variable_table: Vec<LocalVariableTableElement> =
+                    Vec::with_capacity(local_variable_table_length.into());
+                for _ in 0..local_variable_table_length {
+                    let start_pc: w2 = bytes.take()?;
+                    let length: w2 = bytes.take()?;
+                    let name_index: w2 = bytes.take()?;
+                    let name = constant_pool.get_utf8(name_index)?;
+                    let descriptor_index: w2 = bytes.take()?;
+                    let descriptor = constant_pool.get_utf8(descriptor_index)?;
+                    let index: w2 = bytes.take()?;
+                    local_variable_table.push(LocalVariableTableElement {
+                        start_pc,
+                        length,
+                        name,
+                        descriptor,
+                        index,
+                    });
+                }
+                LocalVariableTable(local_variable_table)
             }
             stringify!(Code) => {
                 let max_stack: w2 = bytes.take()?;
@@ -113,6 +136,7 @@ impl Attribute {
             Attribute::ConstantValue(_) => stringify!(ConstantValue).to_string(),
             Attribute::Code(_) => stringify!(Code).to_string(),
             Attribute::SourceFile(_) => stringify!(SourceFile).to_string(),
+            Attribute::LocalVariableTable(_) => stringify!(LocalVariableTable).to_string(),
             Attribute::LineNumberTable(_) => stringify!(LineNumberTable).to_string(),
             Attribute::Synthetic => stringify!(Synthetic).to_string(),
             Attribute::Deprecated => stringify!(Deprecated).to_string(),
@@ -222,6 +246,30 @@ impl Unresolved for UnresolvedAttribute {
                 {
                     writer.write(start_pc);
                     writer.write(line_number);
+                }
+
+                writer.into()
+            }
+            Attribute::LocalVariableTable(line_number_table) => {
+                let mut writer = ByteWriter::new();
+                writer.write(line_number_table.len() as w2);
+                for LocalVariableTableElement {
+                    start_pc,
+                    length,
+                    name,
+                    descriptor,
+                    index,
+                } in line_number_table
+                {
+                    writer.write(start_pc);
+                    writer.write(length);
+                    let name_index =
+                        constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: name }));
+                    writer.write(name_index);
+                    let descriptor_index = constant_pool
+                        .push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: descriptor }));
+                    writer.write(descriptor_index);
+                    writer.write(index);
                 }
 
                 writer.into()
