@@ -6,4 +6,3 @@ pub type w2 = u16;
 pub type w4 = u32;
 #[allow(non_camel_case_types)]
 pub type w8 = u64;
-

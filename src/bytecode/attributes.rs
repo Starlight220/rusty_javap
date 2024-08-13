@@ -4,8 +4,9 @@ use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 use crate::model::attrs;
 use crate::model::attrs::code;
-use crate::model::attrs::line_number_table::LineNumberTableElement;
-use crate::model::attrs::local_variable_table::LocalVariableTableElement;
+use crate::model::attrs::local_variable_table::{
+    parse_local_variable_table, write_local_variable_table,
+};
 use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
 use crate::model::attrs::Attribute;
 use crate::{model, w1, w2, w4};
@@ -24,41 +25,13 @@ impl Attribute {
                     constant_pool.get_constant_as_string(bytes.take()?)?,
                 ))
             }
-            stringify!(LineNumberTable) => {
-                let line_number_table_length: w2 = bytes.take()?;
-                let mut line_number_table: Vec<LineNumberTableElement> =
-                    Vec::with_capacity(line_number_table_length.into());
-                for _ in 0..line_number_table_length {
-                    let start_pc: w2 = bytes.take()?;
-                    let line_number: w2 = bytes.take()?;
-                    line_number_table.push(LineNumberTableElement {
-                        start_pc,
-                        line_number,
-                    });
-                }
-                LineNumberTable(line_number_table)
-            }
+            stringify!(LineNumberTable) => LineNumberTable(
+                bytes
+                    .take()
+                    .map_err(|e| format!("Failed parsing line number table: {}", e))?,
+            ),
             stringify!(LocalVariableTable) => {
-                let local_variable_table_length: w2 = bytes.take()?;
-                let mut local_variable_table: Vec<LocalVariableTableElement> =
-                    Vec::with_capacity(local_variable_table_length.into());
-                for _ in 0..local_variable_table_length {
-                    let start_pc: w2 = bytes.take()?;
-                    let length: w2 = bytes.take()?;
-                    let name_index: w2 = bytes.take()?;
-                    let name = constant_pool.get_utf8(name_index)?;
-                    let descriptor_index: w2 = bytes.take()?;
-                    let descriptor = constant_pool.get_utf8(descriptor_index)?;
-                    let index: w2 = bytes.take()?;
-                    local_variable_table.push(LocalVariableTableElement {
-                        start_pc,
-                        length,
-                        name,
-                        descriptor,
-                        index,
-                    });
-                }
-                LocalVariableTable(local_variable_table)
+                LocalVariableTable(parse_local_variable_table(&mut bytes, constant_pool)?)
             }
             stringify!(Code) => {
                 let max_stack: w2 = bytes.take()?;
@@ -81,7 +54,14 @@ impl Attribute {
                     let catch_type = if catch_type_index == 0 {
                         Option::None
                     } else {
-                        Option::Some(constant_pool.get_class_name(catch_type_index)?)
+                        Option::Some(constant_pool.get_class_name(catch_type_index).map_err(
+                            |e| {
+                                format!(
+                                    "Failed finding exception class name at index {}: {}",
+                                    catch_type_index, e
+                                )
+                            },
+                        )?)
                     };
                     exception_table.push(code::ExceptionTableElement {
                         start_pc,
@@ -106,12 +86,17 @@ impl Attribute {
                 let parameters_count: w1 = bytes.take()?;
                 let mut method_parameters: Vec<MethodParameter> =
                     Vec::with_capacity(parameters_count.into());
-                for _ in 0..parameters_count {
+                for i in 0..parameters_count {
                     let name_index: w2 = bytes.take()?;
                     let name: Option<String> = if name_index == 0 {
                         Option::None
                     } else {
-                        Some(constant_pool.get_utf8(name_index)?)
+                        Some(constant_pool.get_utf8(name_index).map_err(|e| {
+                            format!(
+                                "Couldn't get name for parameter #{} from index {}:\n\t{}",
+                                i, name_index, e
+                            )
+                        })?)
                     };
                     let access_flags: Vec<MethodParameterAccessFlags> = bytes.take()?;
                     method_parameters.push(MethodParameter { name, access_flags })
@@ -123,7 +108,10 @@ impl Attribute {
             stringify!(Signature) => Signature {
                 signature_index: bytes.take()?,
             },
-            stringify!(SourceFile) => SourceFile(constant_pool.get_utf8(bytes.take()?)?),
+            stringify!(SourceFile) => (|| {
+                Result::<Attribute, String>::Ok(SourceFile(constant_pool.get_utf8(bytes.take()?)?))
+            })()
+            .map_err(|e| format!("Couldn't get source file name:\n\t{}", e))?,
 
             &_ => UNIMPLEMENTED_ATTRIBUTE_TODO {
                 name,
@@ -203,6 +191,7 @@ impl Unresolved for UnresolvedAttribute {
             self.info,
             constant_pool,
         )
+        .map_err(|e| format!("Attribute resolution failure:\n {}", e))
     }
 
     fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
@@ -238,41 +227,11 @@ impl Unresolved for UnresolvedAttribute {
             }
             Attribute::LineNumberTable(line_number_table) => {
                 let mut writer = ByteWriter::new();
-                writer.write(line_number_table.len() as w2);
-                for LineNumberTableElement {
-                    start_pc,
-                    line_number,
-                } in line_number_table
-                {
-                    writer.write(start_pc);
-                    writer.write(line_number);
-                }
-
+                writer.write(line_number_table);
                 writer.into()
             }
             Attribute::LocalVariableTable(line_number_table) => {
-                let mut writer = ByteWriter::new();
-                writer.write(line_number_table.len() as w2);
-                for LocalVariableTableElement {
-                    start_pc,
-                    length,
-                    name,
-                    descriptor,
-                    index,
-                } in line_number_table
-                {
-                    writer.write(start_pc);
-                    writer.write(length);
-                    let name_index =
-                        constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: name }));
-                    writer.write(name_index);
-                    let descriptor_index = constant_pool
-                        .push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: descriptor }));
-                    writer.write(descriptor_index);
-                    writer.write(index);
-                }
-
-                writer.into()
+                write_local_variable_table(line_number_table, constant_pool)
             }
             Attribute::Code(code::Code {
                 max_stack,

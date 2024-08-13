@@ -1,11 +1,11 @@
-pub mod constant_pool;
-pub mod methods;
-pub mod unresolved;
+pub mod access;
 pub mod attributes;
 pub mod classfile;
-pub mod access;
-pub mod reader;
-pub mod interfaces;
+pub mod constant_pool;
 pub mod fields;
+pub mod interfaces;
+pub mod methods;
+pub mod reader;
+pub mod unresolved;
 pub mod versions;
 pub mod writer;

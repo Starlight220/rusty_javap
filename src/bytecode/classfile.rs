@@ -10,9 +10,17 @@ use crate::{w2, Class};
 
 impl Take<Class> for ByteReader {
     fn take(&mut self) -> Result<Class, String> {
-        let version = self.take()?;
-        let constant_pool: ConstantPool = self.take()?;
-        let access_flags = self.take()?;
+        let version = self
+            .take()
+            .map_err(|e| format!("Error parsing version:\n\t{}", e))?;
+
+        let constant_pool: ConstantPool = self
+            .take()
+            .map_err(|e| format!("Error parsing constant pool:\n\t{}", e))?;
+
+        let access_flags = self
+            .take()
+            .map_err(|e| format!("Error parsing access flags:\n\t{}", e))?;
 
         let this_class_index: w2 = self.take()?;
         let this_class = constant_pool.get_class_name(this_class_index)?;
@@ -28,13 +36,15 @@ impl Take<Class> for ByteReader {
         let interfaces = unresolved_interfaces.resolve(&constant_pool)?;
 
         let unresolved_fields: Vec<UnresolvedField> = self.take()?;
-        let fields = unresolved_fields.resolve(&constant_pool)?.into();
+        let fields = unresolved_fields.resolve(&constant_pool)?;
 
         let unresolved_methods: Vec<UnresolvedMethod> = self.take()?;
-        let methods = unresolved_methods.resolve(&constant_pool)?.into();
+        let methods = unresolved_methods.resolve(&constant_pool)?;
 
         let unresolved_attributes: Vec<UnresolvedAttribute> = self.take()?;
-        let attributes = unresolved_attributes.resolve(&constant_pool)?;
+        let attributes = unresolved_attributes
+            .resolve(&constant_pool)
+            .map_err(|e| format!("Error resolving class attributes:\n\t{}", e))?;
 
         Ok(Class::new(
             version,
