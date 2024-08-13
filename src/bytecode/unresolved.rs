@@ -19,9 +19,9 @@ impl<T: Unresolved> Unresolved for Vec<T> {
     }
 
     fn unresolve(resolved: Self::Resolved, needed_to_resolve: &mut Self::NeededToResolve) -> Self {
-        return resolved
+        resolved
             .into_iter()
             .map(|item| Unresolved::unresolve(item, needed_to_resolve))
-            .collect();
+            .collect()
     }
 }

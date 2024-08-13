@@ -36,7 +36,7 @@ impl Unresolved for UnresolvedInterfaces {
 
             unresolved.push(class_index);
         }
-        return unresolved;
+        unresolved
     }
 }
 
@@ -47,7 +47,7 @@ impl Take<UnresolvedInterfaces> for ByteReader {
         for _ in 0..interface_count {
             interfaces.push(self.take()?)
         }
-        return Ok(interfaces);
+        Ok(interfaces)
     }
 }
 

@@ -20,30 +20,6 @@ pub struct Class {
     pub attributes: Vec<Attribute>,
 }
 
-impl Class {
-    pub fn new(
-        version: Version,
-        access_flags: Vec<ClassAccessModifier>,
-        this_class: String,
-        super_class: Option<String>,
-        interfaces: Vec<Interface>,
-        fields: Vec<Field>,
-        methods: Vec<Method>,
-        attributes: Vec<Attribute>,
-    ) -> Class {
-        Class {
-            version,
-            access_flags,
-            this_class,
-            super_class,
-            interfaces,
-            fields,
-            methods,
-            attributes,
-        }
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Version {
     pub magic: w4,

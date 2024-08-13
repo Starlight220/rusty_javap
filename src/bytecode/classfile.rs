@@ -46,7 +46,7 @@ impl Take<Class> for ByteReader {
             .resolve(&constant_pool)
             .map_err(|e| format!("Error resolving class attributes:\n\t{}", e))?;
 
-        Ok(Class::new(
+        Ok(Class {
             version,
             access_flags,
             this_class,
@@ -55,7 +55,7 @@ impl Take<Class> for ByteReader {
             fields,
             methods,
             attributes,
-        ))
+        })
     }
 }
 

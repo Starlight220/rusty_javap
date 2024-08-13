@@ -31,7 +31,7 @@ impl Take<CpTag> for ByteReader {
             18 => Ok(InvokeDynamic),
             19 => Ok(Module),
             20 => Ok(Package),
-            it @ _ => Err(format!("Unexpected Constant type ID `{it}`!", it = it)),
+            it => Err(format!("Unexpected Constant type ID `{it}`!", it = it)),
         }
     }
 }
@@ -79,10 +79,7 @@ impl Take<ConstantPool> for ByteReader {
             let tag = self.take()?;
 
             // Long and Double "swallow" another index
-            skip = match tag {
-                CpTag::Double | CpTag::Long => true,
-                _ => false,
-            };
+            skip = matches!(tag, CpTag::Double | CpTag::Long);
 
             let info = CpInfo::of(&tag, self)?;
             let constant = Constant(tag, info);

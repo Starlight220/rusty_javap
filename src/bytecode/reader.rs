@@ -18,13 +18,13 @@ impl<Un: ByteSize> Take<Un> for ByteReader {
     fn take(&mut self) -> Result<Un, String> {
         let start = self.ptr;
         self.ptr += Un::width();
-        return Ok(Un::read(&self.buffer[start..self.ptr]));
+        Ok(Un::read(&self.buffer[start..self.ptr]))
     }
 }
 
 impl From<Vec<w1>> for ByteReader {
     fn from(buffer: Vec<w1>) -> Self {
-        return Self { buffer, ptr: 0 };
+        Self { buffer, ptr: 0 }
     }
 }
 

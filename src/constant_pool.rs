@@ -156,16 +156,9 @@ impl Display for CpInfo {
 
 impl Display for Constant {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        let ref tag = self.0;
-        let ref info = self.1;
-        f.write_str(
-            format!(
-                "{tag}\t{info}",
-                tag = tag.to_string(),
-                info = info.to_string()
-            )
-            .as_str(),
-        )
+        let tag = &self.0;
+        let info = &self.1;
+        f.write_str(format!("{tag}\t{info}", tag = tag, info = info).as_str())
     }
 }
 
@@ -188,6 +181,8 @@ impl ConstantPool {
             pool: vec![Option::None],
         }
     }
+
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> w2 {
         self.pool.len() as w2
     }
@@ -215,13 +210,11 @@ impl ConstantPool {
             .ok_or(format!("Invalid index: {}", index))?
         {
             Constant(CpTag::Utf8, CpInfo::Utf8 { string }) => Ok(string.to_owned()),
-            Constant(tag, _) => {
-                return Err(format!(
-                    "Wrong constant type at index {idx}: expected `Utf8`, found `{found}`",
-                    idx = index,
-                    found = tag
-                ))
-            }
+            Constant(tag, _) => Err(format!(
+                "Wrong constant type at index {idx}: expected `Utf8`, found `{found}`",
+                idx = index,
+                found = tag
+            )),
         }
     }
 
@@ -236,14 +229,12 @@ impl ConstantPool {
             Constant(CpTag::Double | CpTag::Integer | CpTag::Float | CpTag::Long, it) => {
                 Ok(it.content_to_string())
             }
-            Constant(tag, _) => {
-                return Err(format!(
-                    "Wrong constant type at index {idx}: expected {expected}, found `{found}`",
-                    idx = index,
-                    expected = stringify!([Integer, Float, Long, Double, String]),
-                    found = tag
-                ))
-            }
+            Constant(tag, _) => Err(format!(
+                "Wrong constant type at index {idx}: expected {expected}, found `{found}`",
+                idx = index,
+                expected = stringify!([Integer, Float, Long, Double, String]),
+                found = tag
+            )),
         }
     }
 
@@ -254,7 +245,7 @@ impl ConstantPool {
     /// Appends a constant to the pool and returns its index
     pub(crate) fn push(&mut self, constant: Constant) -> w2 {
         self.pool.push(Option::Some(constant));
-        return self.len() - 1; // Last (= currently-added) index is len - 1
+        self.len() - 1 // Last (= currently-added) index is len - 1
     }
 }
 
@@ -269,7 +260,7 @@ impl Display for ConstantPool {
                 }
             }
         }
-        writeln!(f, "")
+        writeln!(f)
     }
 }
 pub(crate) mod double_utils {

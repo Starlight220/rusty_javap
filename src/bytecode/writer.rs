@@ -5,6 +5,7 @@ pub struct ByteWriter {
 }
 
 impl ByteWriter {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self { buffer: vec![] }
     }
@@ -21,9 +22,9 @@ pub trait Writeable {
     fn write(self, writer: &mut ByteWriter);
 }
 
-impl Into<Vec<w1>> for ByteWriter {
-    fn into(self) -> Vec<w1> {
-        self.buffer
+impl From<ByteWriter> for Vec<w1> {
+    fn from(val: ByteWriter) -> Self {
+        val.buffer
     }
 }
 
