@@ -73,7 +73,7 @@ macro_rules! opcodes {
                     $(OpcodeInfo::$opname $({ $($fieldname),+ })? => {
                         let opcode: w1 = Opcodes::$opname.into();
                         writer.write(opcode);
-                        $( $(writer.write($fieldname));+ )?
+                        $( $(writer.write($fieldname);)+ )?
                     },)*
                 }
             }

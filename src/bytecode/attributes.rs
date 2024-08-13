@@ -38,8 +38,8 @@ impl Attribute {
                 let max_locals: w2 = bytes.take()?;
 
                 let code_length: w4 = bytes.take()?;
-                let raw_code = bytes.take_bytes(code_length as usize)?.to_vec();
-                let mut code_reader = ByteReader::from(raw_code);
+                let mut code_reader =
+                    ByteReader::from(bytes.take_bytes(code_length as usize)?.to_vec());
                 let mut code: Vec<code::OpcodeInfo> = vec![];
                 while !code_reader.is_empty() {
                     code.push(code_reader.take()?);
@@ -245,9 +245,17 @@ impl Unresolved for UnresolvedAttribute {
                 let mut writer = ByteWriter::new();
                 writer.write(max_stack);
                 writer.write(max_locals);
-                writer.write(code.len() as w4);
-                for byte in code {
-                    writer.write(byte);
+                let code_bytes: Vec<w1> = {
+                    let mut code_writer = ByteWriter::new();
+                    for opcode in code {
+                        code_writer.write(opcode);
+                    }
+                    code_writer.into()
+                };
+                let code_length = code_bytes.len() as w4;
+                writer.write(code_length);
+                for byte in code_bytes {
+                    writer.write_byte(byte);
                 }
                 writer.write(exception_table.len() as w2);
                 for code::ExceptionTableElement {
