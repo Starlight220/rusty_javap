@@ -38,9 +38,11 @@ impl Attribute {
                 let max_locals: w2 = bytes.take()?;
 
                 let code_length: w4 = bytes.take()?;
+                let raw_code = bytes.take_bytes(code_length as usize)?.to_vec();
+                let mut code_reader = ByteReader::from(raw_code);
                 let mut code: Vec<code::OpcodeInfo> = vec![];
-                for _ in 0..code_length {
-                    code.push(bytes.take()?);
+                while !code_reader.is_empty() {
+                    code.push(code_reader.take()?);
                 }
 
                 let exception_table_length: w2 = bytes.take()?;
