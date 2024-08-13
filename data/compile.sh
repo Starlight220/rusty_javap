@@ -1,1 +1,1 @@
-$JAVA_HOME/bin/javac Example.java
+$JAVA_HOME/bin/javac -g -parameters  Example.java

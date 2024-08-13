@@ -11,7 +11,7 @@ public class Example {
     var example = new Example();
   }
 
-  public int example(int a, int b) {
+  public int example(int a, final int b) {
     int c = a + b;
     sum = c;
     return c;
