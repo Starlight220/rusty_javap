@@ -65,7 +65,7 @@ impl Attribute {
                 let max_locals: w2 = bytes.take()?;
 
                 let code_length: w4 = bytes.take()?;
-                let mut code: Vec<w1> = vec![];
+                let mut code: Vec<code::OpcodeInfo> = vec![];
                 for _ in 0..code_length {
                     code.push(bytes.take()?);
                 }
