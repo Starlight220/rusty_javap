@@ -1,6 +1,8 @@
 pub mod constant_value;
+pub mod method_parameters;
 
 use crate::model::attrs::constant_value::ConstantValue;
+use crate::model::attrs::method_parameters::MethodParameters;
 use crate::w2;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +30,7 @@ pub enum Attribute {
     // AnnotationDefault,
     // RuntimeVisibleTypeAnnotations { num_annotations: w2}, // TODO: needs annotations
     // RuntimeInvisibleTypeAnnotations { num_annotations: w2}, // TODO: needs annotations
-    // MethodParameters,
+    MethodParameters(MethodParameters),
     // Module,
     // ModulePackages,
     // ModuleMainClass,

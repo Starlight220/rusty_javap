@@ -2,6 +2,7 @@ use crate::bytecode::reader::{ByteReader, Take};
 use crate::bytecode::unresolved::Unresolved;
 use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
+use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
 use crate::model::attrs::{self, Attribute};
 use crate::{model, w1, w2, w4};
 
@@ -18,6 +19,22 @@ impl Attribute {
                 ConstantValue(model::attrs::constant_value::ConstantValue::String(
                     constant_pool.get_constant_as_string(bytes.take()?)?,
                 ))
+            }
+            stringify!(MethodParameters) => {
+                let parameters_count: w1 = bytes.take()?;
+                let mut method_parameters: Vec<MethodParameter> =
+                    Vec::with_capacity(parameters_count.into());
+                for _ in 0..parameters_count {
+                    let name_index: w2 = bytes.take()?;
+                    let name: Option<String> = if name_index == 0 {
+                        Option::None
+                    } else {
+                        Some(constant_pool.get_utf8(name_index)?)
+                    };
+                    let access_flags: Vec<MethodParameterAccessFlags> = bytes.take()?;
+                    method_parameters.push(MethodParameter { name, access_flags })
+                }
+                MethodParameters(method_parameters)
             }
             stringify!(Synthetic) => Synthetic,
             stringify!(Deprecated) => Deprecated,
@@ -39,6 +56,7 @@ impl Attribute {
             Attribute::Synthetic => stringify!(Synthetic).to_string(),
             Attribute::Deprecated => stringify!(Deprecated).to_string(),
             Attribute::Signature { .. } => stringify!(Signature).to_string(),
+            Attribute::MethodParameters { .. } => stringify!(MethodParameters).to_string(),
             Attribute::UNIMPLEMENTED_ATTRIBUTE_TODO { name, .. } => name.clone(),
         }
     }
@@ -95,11 +113,11 @@ impl Unresolved for UnresolvedAttribute {
     type NeededToResolve = ConstantPool;
 
     fn resolve(self, constant_pool: &Self::NeededToResolve) -> Result<Self::Resolved, String> {
-        Ok(Attribute::create(
+        Attribute::create(
             constant_pool.get_utf8(self.name_index)?,
             self.info,
             constant_pool,
-        )?)
+        )
     }
 
     fn unresolve(resolved: Self::Resolved, constant_pool: &mut Self::NeededToResolve) -> Self {
@@ -131,6 +149,19 @@ impl Unresolved for UnresolvedAttribute {
                     }
                 };
                 constant_pool.push(constant).to_be_bytes().to_vec()
+            }
+            Attribute::MethodParameters(method_parameters) => {
+                let mut writer = ByteWriter::new();
+                writer.write(method_parameters.len() as w1);
+                for MethodParameter { name, access_flags } in method_parameters {
+                    let name_index: w2 = name.map_or(0, |name| {
+                        constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: name }))
+                    });
+                    writer.write(name_index);
+                    writer.write(access_flags);
+                }
+
+                writer.into()
             }
             Attribute::SourceFile(source_file_name) => constant_pool
                 .push(Constant(

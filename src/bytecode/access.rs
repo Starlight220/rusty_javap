@@ -29,6 +29,9 @@ macro_rules! impl_rw_for_modifiers {
         }
     };
 }
+
+pub(crate) use impl_rw_for_modifiers;
+
 impl_rw_for_modifiers!(FieldAccessModifier);
 
 impl Take<Vec<ClassAccessModifier>> for ByteReader {
