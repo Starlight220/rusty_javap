@@ -158,11 +158,15 @@ opcodes! {
     fneg = 0x76;
     // TODO more
 
-    getstatic = 0xb2 {index: w1}; // Constant pool index of fieldref
+    getfield = 0xb4 {index: w2}; // Constant pool index of fieldref
+    getstatic = 0xb2 {index: w2}; // Constant pool index of fieldref
     goto = 0xa7 {branch: w2};
     goto_w = 0xc8 {branch: w4};
     // TODO more
-
+    iadd = 0x60;
+    iaload = 0x2e;
+    iand = 0x7e;
+    iastore = 0x4f;
     iconst_m1 = 0x2;
     iconst_0 = 0x3;
     iconst_1 = 0x4;
@@ -170,6 +174,7 @@ opcodes! {
     iconst_3 = 0x6;
     iconst_4 = 0x7;
     iconst_5 = 0x8;
+    idiv = 0x6c;
     // TODO more
 
     ifeq = 0x99 {branch: w2};
@@ -181,15 +186,34 @@ opcodes! {
     ifnonnull = 0xc7 {branch: w2};
     ifnull = 0xc6 {branch: w2};
     iinc = 0x84 {index: w1, constant: w1};
-    // TODO more
-
+    iload = 0x15 {index: w1};
+    iload_0 = 0x1a;
+    iload_1 = 0x1b;
+    iload_2 = 0x1c;
+    iload_3 = 0x1d;
+    imul = 0x68;
+    ineg = 0x74;
     instanceof = 0xc1 {index: w2}; // Constant pool index of class
     invokedynamic = 0xba {index: w2, _zero: w2}; // Constant pool index of ?; zero
     invokeinterface = 0xb9 {index: w2, count: w1, _zero: w1}; // Constant pool index of interface method ref; nargs; zero
     invokespecial = 0xb7 {index: w2}; // Constant pool index of method ref
     invokestatic = 0xb8 {index: w2}; // Constant pool index of method ref
     invokevirtual = 0xb6 {index: w2}; // Constant pool index of method ref
+    ior = 0x80;
+    irem = 0x70;
+    ireturn = 0xac;
+    ishl = 0x78;
+    ishr = 0x7a;
+    istore = 0x36 {index: w1};
+    istore_0 = 0x3b;
+    istore_1 = 0x3c;
+    istore_2 = 0x3d;
+    istore_3 = 0x3e;
+    isub = 0x64;
+    iushr = 0x7c;
     // TODO more
+
+
 
     lload = 0x16 {index: w1};
     lload_0 = 0x1e;
@@ -207,6 +231,9 @@ opcodes! {
     ldc = 0x12 {index: w1}; // Constant pool index of constant
     ldc_w = 0x13 {index: w2}; // Constant pool index of constant
     ldc2_w = 0x14 {index: w2}; // Constant pool index of constant
+    // TODO more
+
+    new = 0xbb {index: w2}; // Constant pool index of class
     // TODO more
 
     nop = 0x00;
