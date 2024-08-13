@@ -3,6 +3,7 @@ use crate::bytecode::unresolved::Unresolved;
 use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 use crate::model::attrs;
+use crate::model::attrs::code;
 use crate::model::attrs::line_number_table::LineNumberTableElement;
 use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
 use crate::model::attrs::Attribute;
@@ -36,6 +37,48 @@ impl Attribute {
                 }
                 LineNumberTable(line_number_table)
             }
+            stringify!(Code) => {
+                let max_stack: w2 = bytes.take()?;
+                let max_locals: w2 = bytes.take()?;
+
+                let code_length: w4 = bytes.take()?;
+                let mut code: Vec<w1> = vec![];
+                for _ in 0..code_length {
+                    code.push(bytes.take()?);
+                }
+
+                let exception_table_length: w2 = bytes.take()?;
+                let mut exception_table: Vec<code::ExceptionTableElement> = vec![];
+                for _ in 0..exception_table_length {
+                    let start_pc: w2 = bytes.take()?;
+                    let end_pc: w2 = bytes.take()?;
+                    let handler_pc: w2 = bytes.take()?;
+
+                    let catch_type_index: w2 = bytes.take()?;
+                    let catch_type = if catch_type_index == 0 {
+                        Option::None
+                    } else {
+                        Option::Some(constant_pool.get_class_name(catch_type_index)?)
+                    };
+                    exception_table.push(code::ExceptionTableElement {
+                        start_pc,
+                        end_pc,
+                        handler_pc,
+                        catch_type,
+                    });
+                }
+
+                let unresolved_attributes: Vec<UnresolvedAttribute> = bytes.take()?;
+                let attributes = unresolved_attributes.resolve(constant_pool)?;
+
+                Code(code::Code {
+                    max_stack,
+                    max_locals,
+                    code,
+                    exception_table,
+                    attributes,
+                })
+            }
             stringify!(MethodParameters) => {
                 let parameters_count: w1 = bytes.take()?;
                 let mut method_parameters: Vec<MethodParameter> =
@@ -68,6 +111,7 @@ impl Attribute {
     fn name(&self) -> String {
         match self {
             Attribute::ConstantValue(_) => stringify!(ConstantValue).to_string(),
+            Attribute::Code(_) => stringify!(Code).to_string(),
             Attribute::SourceFile(_) => stringify!(SourceFile).to_string(),
             Attribute::LineNumberTable(_) => stringify!(LineNumberTable).to_string(),
             Attribute::Synthetic => stringify!(Synthetic).to_string(),
@@ -161,7 +205,8 @@ impl Unresolved for UnresolvedAttribute {
                         Constant(CpTag::Double, CpInfo::Double { double })
                     }
                     attrs::constant_value::ConstantValue::String(string) => {
-                        let string_index = constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string }));
+                        let string_index =
+                            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string }));
                         Constant(CpTag::String, CpInfo::String { string_index })
                     }
                 };
@@ -178,6 +223,57 @@ impl Unresolved for UnresolvedAttribute {
                     writer.write(start_pc);
                     writer.write(line_number);
                 }
+
+                writer.into()
+            }
+            Attribute::Code(code::Code {
+                max_stack,
+                max_locals,
+                code,
+                exception_table,
+                attributes,
+            }) => {
+                let mut writer = ByteWriter::new();
+                writer.write(max_stack);
+                writer.write(max_locals);
+                writer.write(code.len() as w4);
+                for byte in code {
+                    writer.write(byte);
+                }
+                writer.write(exception_table.len() as w2);
+                for code::ExceptionTableElement {
+                    start_pc,
+                    end_pc,
+                    handler_pc,
+                    catch_type,
+                } in exception_table
+                {
+                    writer.write(start_pc);
+                    writer.write(end_pc);
+                    writer.write(handler_pc);
+
+                    let catch_type_index: w2 = match catch_type {
+                        Option::None => 0,
+                        Option::Some(exception_type_name) => {
+                            let class_name_index = constant_pool.push(Constant(
+                                CpTag::Utf8,
+                                CpInfo::Utf8 {
+                                    string: exception_type_name,
+                                },
+                            ));
+                            constant_pool.push(Constant(
+                                CpTag::Class,
+                                CpInfo::Class {
+                                    name_index: class_name_index,
+                                },
+                            ))
+                        }
+                    };
+                    writer.write(catch_type_index);
+                }
+                let unresolved_attributes: Vec<UnresolvedAttribute> =
+                    Unresolved::unresolve(attributes, constant_pool);
+                writer.write(unresolved_attributes);
 
                 writer.into()
             }
