@@ -1,7 +1,6 @@
 use rusty_javap::bytecode::reader::{ByteReader, Take};
 use rusty_javap::model::class::Class;
 
-
 #[test]
 fn classfile2json() {
     let bytes = include_bytes!("./Example.class");
