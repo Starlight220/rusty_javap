@@ -8,6 +8,6 @@ fn json2class2json() {
     let class: Class = serde_json::from_value(json_class.clone()).unwrap();
 
     let written_json: serde_json::Value = serde_json::to_value(class).unwrap();
-    assert_eq!(json_class, written_json);
+    assert_eq!(json_class, written_json)
 }
 
