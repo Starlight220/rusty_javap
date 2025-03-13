@@ -15,17 +15,92 @@ pub struct Code {
     /// Len: w4
     pub code: Vec<OpcodeInfo>,
     /// Len: w2
-    pub exception_table: Vec<ExceptionTableElement>,
+    pub exception_table: Vec<exception_table::ExceptionTableElement>,
     /// Len: w2
     pub attributes: Vec<Attribute>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ExceptionTableElement {
-    pub start_pc: w2,
-    pub end_pc: w2,
-    pub handler_pc: w2,
-    pub catch_type: Option<String>,
+
+pub mod exception_table {
+    use crate::bytecode::reader::Take;
+use serde::{Deserialize, Serialize};
+    use crate::bytecode::reader::ByteReader;
+    use crate::bytecode::writer::ByteWriter;
+    use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
+    use crate::typedefs::w2;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct ExceptionTableElement {
+        pub start_pc: w2,
+        pub end_pc: w2,
+        pub handler_pc: w2,
+        pub catch_type: Option<String>,
+    }
+
+    pub fn parse_exception_table(constant_pool: &ConstantPool, bytes: &mut ByteReader) -> Result<Vec<ExceptionTableElement>, String> {
+        let exception_table_length: w2 = bytes.take()?;
+        let mut exception_table: Vec<ExceptionTableElement> = vec![];
+        for _ in 0..exception_table_length {
+            let start_pc: w2 = bytes.take()?;
+            let end_pc: w2 = bytes.take()?;
+            let handler_pc: w2 = bytes.take()?;
+
+            let catch_type_index: w2 = bytes.take()?;
+            let catch_type = if catch_type_index == 0 {
+                Option::None
+            } else {
+                Option::Some(constant_pool.get_class_name(catch_type_index).map_err(
+                    |e| {
+                        format!(
+                            "Failed finding exception class name at index {}: {}",
+                            catch_type_index, e
+                        )
+                    },
+                )?)
+            };
+            exception_table.push(ExceptionTableElement {
+                start_pc,
+                end_pc,
+                handler_pc,
+                catch_type,
+            });
+        }
+        Ok(exception_table)
+    }
+
+    pub fn write_exception_table(constant_pool: &mut ConstantPool, exception_table: Vec<ExceptionTableElement>, writer: &mut ByteWriter) {
+        writer.write(exception_table.len() as w2);
+        for ExceptionTableElement {
+            start_pc,
+            end_pc,
+            handler_pc,
+            catch_type,
+        } in exception_table
+        {
+            writer.write(start_pc);
+            writer.write(end_pc);
+            writer.write(handler_pc);
+
+            let catch_type_index: w2 = match catch_type {
+                Option::None => 0,
+                Option::Some(exception_type_name) => {
+                    let class_name_index = constant_pool.push(Constant(
+                        CpTag::Utf8,
+                        CpInfo::Utf8 {
+                            string: exception_type_name,
+                        },
+                    ));
+                    constant_pool.push(Constant(
+                        CpTag::Class,
+                        CpInfo::Class {
+                            name_index: class_name_index,
+                        },
+                    ))
+                }
+            };
+            writer.write(catch_type_index);
+        }
+    }
 }
 
 macro_rules! opcodes {

@@ -4,6 +4,7 @@ use crate::bytecode::writer::{ByteWriter, Writeable};
 use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 use crate::model::attrs;
 use crate::model::attrs::code;
+use crate::model::attrs::code::exception_table::{parse_exception_table, write_exception_table};
 use crate::model::attrs::local_variable_table::{
     parse_local_variable_table, write_local_variable_table,
 };
@@ -45,33 +46,7 @@ impl Attribute {
                     code.push(code_reader.take()?);
                 }
 
-                let exception_table_length: w2 = bytes.take()?;
-                let mut exception_table: Vec<code::ExceptionTableElement> = vec![];
-                for _ in 0..exception_table_length {
-                    let start_pc: w2 = bytes.take()?;
-                    let end_pc: w2 = bytes.take()?;
-                    let handler_pc: w2 = bytes.take()?;
-
-                    let catch_type_index: w2 = bytes.take()?;
-                    let catch_type = if catch_type_index == 0 {
-                        Option::None
-                    } else {
-                        Option::Some(constant_pool.get_class_name(catch_type_index).map_err(
-                            |e| {
-                                format!(
-                                    "Failed finding exception class name at index {}: {}",
-                                    catch_type_index, e
-                                )
-                            },
-                        )?)
-                    };
-                    exception_table.push(code::ExceptionTableElement {
-                        start_pc,
-                        end_pc,
-                        handler_pc,
-                        catch_type,
-                    });
-                }
+                let exception_table = parse_exception_table(constant_pool, &mut bytes)?;
 
                 let unresolved_attributes: Vec<UnresolvedAttribute> = bytes.take()?;
                 let attributes = unresolved_attributes.resolve(constant_pool)?;
@@ -257,37 +232,7 @@ impl Unresolved for UnresolvedAttribute {
                 for byte in code_bytes {
                     writer.write_byte(byte);
                 }
-                writer.write(exception_table.len() as w2);
-                for code::ExceptionTableElement {
-                    start_pc,
-                    end_pc,
-                    handler_pc,
-                    catch_type,
-                } in exception_table
-                {
-                    writer.write(start_pc);
-                    writer.write(end_pc);
-                    writer.write(handler_pc);
-
-                    let catch_type_index: w2 = match catch_type {
-                        Option::None => 0,
-                        Option::Some(exception_type_name) => {
-                            let class_name_index = constant_pool.push(Constant(
-                                CpTag::Utf8,
-                                CpInfo::Utf8 {
-                                    string: exception_type_name,
-                                },
-                            ));
-                            constant_pool.push(Constant(
-                                CpTag::Class,
-                                CpInfo::Class {
-                                    name_index: class_name_index,
-                                },
-                            ))
-                        }
-                    };
-                    writer.write(catch_type_index);
-                }
+                write_exception_table(constant_pool, exception_table, &mut writer);
                 let unresolved_attributes: Vec<UnresolvedAttribute> =
                     Unresolved::unresolve(attributes, constant_pool);
                 writer.write(unresolved_attributes);
