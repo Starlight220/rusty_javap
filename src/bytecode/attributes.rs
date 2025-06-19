@@ -11,6 +11,7 @@ use crate::model::attrs::local_variable_table::{
 use crate::model::attrs::method_parameters::{MethodParameter, MethodParameterAccessFlags};
 use crate::model::attrs::Attribute;
 use crate::{model, w1, w2, w4};
+use crate::model::attrs::code::OpcodeInfo;
 
 impl Attribute {
     fn create(
@@ -43,7 +44,7 @@ impl Attribute {
                     ByteReader::from(bytes.take_bytes(code_length as usize)?.to_vec());
                 let mut code: Vec<code::OpcodeInfo> = vec![];
                 while !code_reader.is_empty() {
-                    code.push(code_reader.take()?);
+                    code.push(OpcodeInfo::decode_opcode_info(&mut code_reader,  constant_pool)?);
                 }
 
                 let exception_table = parse_exception_table(constant_pool, &mut bytes)?;
@@ -223,7 +224,7 @@ impl Unresolved for UnresolvedAttribute {
                 let code_bytes: Vec<w1> = {
                     let mut code_writer = ByteWriter::new();
                     for opcode in code {
-                        code_writer.write(opcode);
+                        opcode.encode_opcode_info(constant_pool, &mut code_writer);
                     }
                     code_writer.into()
                 };

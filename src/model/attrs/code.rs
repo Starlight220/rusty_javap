@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::bytecode::reader::ByteReader;
 use crate::model::attrs::Attribute;
 use crate::{w1, w2, w4};
+use crate::constant_pool::{Constant, ConstantPool, CpInfo, CpTag};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Code {
@@ -103,6 +104,25 @@ use serde::{Deserialize, Serialize};
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClassRef(String);
+impl ClassRef {
+    fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<ClassRef, String> {
+        Ok(Self(constant_pool.get_class_name(bytes.take()?)?))
+    }
+    fn encode(self, constant_pool: &mut ConstantPool, writer: &mut ByteWriter) {
+        let class_name_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.0 }));
+        let class_index = constant_pool.push(Constant(
+            CpTag::Class,
+            CpInfo::Class {
+                name_index: class_name_index,
+            },
+        ));
+        writer.write(class_index);
+    }
+}
+
 macro_rules! opcodes {
     ($($opname:ident = $opcode:literal $({ $($fieldname:ident: $fieldtype:ty),+ })?;)*) => {
         #[allow(non_camel_case_types)]
@@ -134,21 +154,52 @@ macro_rules! opcodes {
             $($opname $({ $($fieldname: $fieldtype),+ })? ,)*
         }
 
-        impl Take<OpcodeInfo> for ByteReader {
-            fn take(&mut self) -> Result<OpcodeInfo, String> {
-                let opcode: w1 = self.take()?;
+        impl OpcodeInfo {
+            pub fn decode_opcode_info(
+                bytes: &mut ByteReader,
+                constants: &ConstantPool
+            ) -> Result<Self, String> {
+                trait Decode<T> {
+                    fn decode(
+                        bytes: &mut ByteReader,
+                        _constants: &ConstantPool
+                    ) -> Result<T, String>;
+                }
+                impl<T> Decode<T> for T where ByteReader: Take<T> {
+                    fn decode(
+                        bytes: &mut ByteReader,
+                        _constants: &ConstantPool
+                    ) -> Result<T, String> {
+                        bytes.take()
+                    }
+                }
+                let opcode: w1 = bytes.take()?;
                 Ok(match opcode.try_into()? {
-                    $(Opcodes::$opname => OpcodeInfo::$opname$({ $($fieldname: self.take()?),+ })? ,)*
+                    $(Opcodes::$opname => OpcodeInfo::$opname$({ $($fieldname: <$fieldtype>::decode(bytes, constants)?),+ })? ,)*
                 })
             }
-        }
-        impl Writeable for OpcodeInfo {
-            fn write(self, writer: &mut ByteWriter) {
+            pub fn encode_opcode_info(
+                self,
+                constant_pool: &mut ConstantPool,
+                writer: &mut ByteWriter
+            ) {
+                trait Encode {
+                    fn encode(self,
+                        _constant_pool: &mut ConstantPool,
+                        writer: &mut ByteWriter);
+                }
+                impl<T> Encode for T where T: Writeable {
+                    fn encode(self,
+                        _constant_pool: &mut ConstantPool,
+                        writer: &mut ByteWriter) {
+                        writer.write(self);
+                    }
+                }
                 match self {
                     $(OpcodeInfo::$opname $({ $($fieldname),+ })? => {
                         let opcode: w1 = Opcodes::$opname.into();
                         writer.write(opcode);
-                        $( $(writer.write($fieldname);)+ )?
+                        $( $(<$fieldtype>::encode($fieldname, constant_pool, writer);)+ )?
                     },)*
                 }
             }
@@ -165,7 +216,7 @@ opcodes! {
     aload_1 = 0x2b;
     aload_2 = 0x2c;
     aload_3 = 0x2d;
-    anewarray = 0xbd {index: w2}; // Constant pool index of class
+    anewarray = 0xbd {class: ClassRef}; // Constant pool index of class
     areturn = 0xb0;
     arraylength = 0xbe;
     astore = 0x3a {index: w1};
@@ -179,7 +230,7 @@ opcodes! {
     bipush = 0x10;
     caload = 0x34;
     castore = 0x55;
-    checkcast = 0xc0 {index: w2}; // Constant pool index of class
+    checkcast = 0xc0 {class: ClassRef}; // Constant pool index of class
     d2f = 0x90;
     d2i = 0x8e;
     d2l = 0x8f;
@@ -268,7 +319,7 @@ opcodes! {
     iload_3 = 0x1d;
     imul = 0x68;
     ineg = 0x74;
-    instanceof = 0xc1 {index: w2}; // Constant pool index of class
+    instanceof = 0xc1 {class: ClassRef}; // Constant pool index of class
     invokedynamic = 0xba {index: w2, _zero: w2}; // Constant pool index of ?; zero
     invokeinterface = 0xb9 {index: w2, count: w1, _zero: w1}; // Constant pool index of interface method ref; nargs; zero
     invokespecial = 0xb7 {index: w2}; // Constant pool index of method ref
@@ -308,7 +359,7 @@ opcodes! {
     ldc2_w = 0x14 {index: w2}; // Constant pool index of constant
     // TODO more
 
-    new = 0xbb {index: w2}; // Constant pool index of class
+    new = 0xbb {class: ClassRef}; // Constant pool index of class
     // TODO more
 
     nop = 0x00;
