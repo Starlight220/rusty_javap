@@ -1,9 +1,7 @@
 use std::convert::{TryFrom, TryInto};
-
-use crate::bytecode::reader::Take;
+use crate::bytecode::reader::{ByteSize, Take};
 use crate::bytecode::writer::{ByteWriter, Writeable};
 use serde::{Deserialize, Serialize};
-
 use crate::bytecode::reader::ByteReader;
 use crate::model::attrs::Attribute;
 use crate::{w1, w2, w4};
@@ -123,6 +121,129 @@ impl ClassRef {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FieldRef { class: ClassRef, name: String, descriptor: String }
+impl FieldRef {
+    fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<Self, String> {
+        let field_index:  w2 = bytes.take()?;
+        let (class_index, name_and_type_index) = match constant_pool[field_index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", field_index))?
+        {
+            Constant(CpTag::Fieldref, CpInfo::Fieldref { class_index, name_and_type_index }) => (*class_index, *name_and_type_index),
+            Constant(tag, _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `FieldRef`, found `{found}`",
+                    idx = field_index,
+                    found = tag
+                ))
+            }
+        };
+        let class = ClassRef(constant_pool.get_class_name(class_index)?);
+        let (name, descriptor) = constant_pool.get_name_and_type(name_and_type_index)?;
+        Ok(Self { class, name, descriptor })
+    }
+
+    fn encode(self, constant_pool: &mut ConstantPool, writer: &mut ByteWriter) {
+        let class_index: w2 = {
+            let mut class_writer = ByteWriter::new();
+            self.class.encode(constant_pool, &mut class_writer);
+            let buffer: Vec<w1> = class_writer.into();
+            w2::read(buffer.as_slice())
+        };
+        let name_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.name }));
+        let descriptor_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.descriptor }));
+        let name_and_type_index =
+            constant_pool.push(Constant(CpTag::NameAndType, CpInfo::NameAndType { name_index, descriptor_index }));
+        let field_index = constant_pool.push(Constant(CpTag::Fieldref, CpInfo::Fieldref { class_index , name_and_type_index }));
+        writer.write(field_index);
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MethodRef { class: ClassRef, name: String, descriptor: String }
+impl MethodRef {
+    fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<Self, String> {
+        let method_index:  w2 = bytes.take()?;
+        let (class_index, name_and_type_index) = match constant_pool[method_index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", method_index))?
+        {
+            Constant(CpTag::Methodref, CpInfo::Methodref { class_index, name_and_type_index }) => (*class_index, *name_and_type_index),
+            Constant(tag, _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `MethodRef`, found `{found}`",
+                    idx = method_index,
+                    found = tag
+                ))
+            }
+        };
+        let class = ClassRef(constant_pool.get_class_name(class_index)?);
+        let (name, descriptor) = constant_pool.get_name_and_type(name_and_type_index)?;
+        Ok(Self { class, name, descriptor })
+    }
+
+    fn encode(self, constant_pool: &mut ConstantPool, writer: &mut ByteWriter) {
+        let class_index: w2 = {
+            let mut class_writer = ByteWriter::new();
+            self.class.encode(constant_pool, &mut class_writer);
+            let buffer: Vec<w1> = class_writer.into();
+            w2::read(buffer.as_slice())
+        };
+        let name_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.name }));
+        let descriptor_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.descriptor }));
+        let name_and_type_index =
+            constant_pool.push(Constant(CpTag::NameAndType, CpInfo::NameAndType { name_index, descriptor_index }));
+        let field_index = constant_pool.push(Constant(CpTag::Methodref, CpInfo::Methodref { class_index , name_and_type_index }));
+        writer.write(field_index);
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct InterfaceMethodRef { class: ClassRef, name: String, descriptor: String }
+impl InterfaceMethodRef {
+    fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<Self, String> {
+        let method_index:  w2 = bytes.take()?;
+        let (class_index, name_and_type_index) = match constant_pool[method_index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", method_index))?
+        {
+            Constant(CpTag::InterfaceMethodref, CpInfo::InterfaceMethodref { class_index, name_and_type_index }) => (*class_index, *name_and_type_index),
+            Constant(tag, _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `InterfaceMethodref`, found `{found}`",
+                    idx = method_index,
+                    found = tag
+                ))
+            }
+        };
+        let class = ClassRef(constant_pool.get_class_name(class_index)?);
+        let (name, descriptor) = constant_pool.get_name_and_type(name_and_type_index)?;
+        Ok(Self { class, name, descriptor })
+    }
+
+    fn encode(self, constant_pool: &mut ConstantPool, writer: &mut ByteWriter) {
+        let class_index: w2 = {
+            let mut class_writer = ByteWriter::new();
+            self.class.encode(constant_pool, &mut class_writer);
+            let buffer: Vec<w1> = class_writer.into();
+            w2::read(buffer.as_slice())
+        };
+        let name_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.name }));
+        let descriptor_index =
+            constant_pool.push(Constant(CpTag::Utf8, CpInfo::Utf8 { string: self.descriptor }));
+        let name_and_type_index =
+            constant_pool.push(Constant(CpTag::NameAndType, CpInfo::NameAndType { name_index, descriptor_index }));
+        let field_index = constant_pool.push(Constant(CpTag::InterfaceMethodref, CpInfo::InterfaceMethodref { class_index , name_and_type_index }));
+        writer.write(field_index);
+    }
+}
+
 macro_rules! opcodes {
     ($($opname:ident = $opcode:literal $({ $($fieldname:ident: $fieldtype:ty),+ })?;)*) => {
         #[allow(non_camel_case_types)]
@@ -207,6 +328,7 @@ macro_rules! opcodes {
     };
 }
 
+// https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-6.html#jvms-6.5
 opcodes! {
     aaload = 0x32;
     aastore = 0x53;
@@ -284,8 +406,8 @@ opcodes! {
     fneg = 0x76;
     // TODO more
 
-    getfield = 0xb4 {index: w2}; // Constant pool index of fieldref
-    getstatic = 0xb2 {index: w2}; // Constant pool index of fieldref
+    getfield = 0xb4 {field: FieldRef}; // Constant pool index of fieldref
+    getstatic = 0xb2 {field: FieldRef}; // Constant pool index of fieldref
     goto = 0xa7 {branch: w2};
     goto_w = 0xc8 {branch: w4};
     // TODO more
@@ -321,10 +443,10 @@ opcodes! {
     ineg = 0x74;
     instanceof = 0xc1 {class: ClassRef}; // Constant pool index of class
     invokedynamic = 0xba {index: w2, _zero: w2}; // Constant pool index of ?; zero
-    invokeinterface = 0xb9 {index: w2, count: w1, _zero: w1}; // Constant pool index of interface method ref; nargs; zero
-    invokespecial = 0xb7 {index: w2}; // Constant pool index of method ref
-    invokestatic = 0xb8 {index: w2}; // Constant pool index of method ref
-    invokevirtual = 0xb6 {index: w2}; // Constant pool index of method ref
+    invokeinterface = 0xb9 {method: InterfaceMethodRef, count: w1, _zero: w1}; // Constant pool index of interface method ref; nargs; zero
+    invokespecial = 0xb7 {method: MethodRef}; // Constant pool index of method ref
+    invokestatic = 0xb8 {method: MethodRef}; // Constant pool index of method ref
+    invokevirtual = 0xb6 {method: MethodRef}; // Constant pool index of method ref
     ior = 0x80;
     irem = 0x70;
     ireturn = 0xac;
@@ -365,8 +487,8 @@ opcodes! {
     nop = 0x00;
     pop = 0x57;
     pop2 = 0x58;
-    putfield = 0xb5 {index: w2}; // Constant pool index of field ref
-    putstatic = 0xb3 {index: w2}; // Constant pool index of field ref
+    putfield = 0xb5 {field: FieldRef}; // Constant pool index of field ref
+    putstatic = 0xb3 {field: FieldRef}; // Constant pool index of field ref
     // TODO more
 
     ret = 0xa9;

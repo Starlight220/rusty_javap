@@ -21,9 +21,9 @@ pub enum CpTag {
     String = 8,
     /// field
     Fieldref = 9,
-    /// instance method (FIXME: make sure that statics don't count)
+    /// instance/static method
     Methodref = 10,
-    /// interface method (FIXME: what about statics here?)
+    /// interface method
     InterfaceMethodref = 11,
     /// field/method signature
     NameAndType = 12,
@@ -202,6 +202,25 @@ impl ConstantPool {
             }
         };
         self.get_utf8(index)
+    }
+
+    pub fn get_name_and_type(&self, name_and_type_index: w2) -> Result<(String, String), String> {
+        let (name_index, descriptor_index) = match self[name_and_type_index]
+            .as_ref()
+            .ok_or(format!("Invalid index: {}", name_and_type_index))?
+        {
+            Constant(CpTag::NameAndType, CpInfo::NameAndType { name_index, descriptor_index }) => (*name_index, *descriptor_index),
+            Constant(tag, _) => {
+                return Err(format!(
+                    "Wrong constant type at index {idx}: expected `NameAndType`, found `{found}`",
+                    idx = name_and_type_index,
+                    found = tag
+                ))
+            }
+        };
+        let name = self.get_utf8(name_index)?;
+        let descriptor_index = self.get_utf8(descriptor_index)?;
+        Ok((name, descriptor_index))
     }
 
     pub fn get_utf8(&self, index: w2) -> Result<String, String> {

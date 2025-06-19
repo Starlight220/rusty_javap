@@ -55,7 +55,11 @@
               "aload_0",
               {
                 "invokespecial": {
-                  "index": 1
+                  "method": {
+                    "name": "<init>",
+                    "class": "java/lang/Object",
+                    "descriptor": "()V"
+                  }
                 }
               },
               "aload_0",
@@ -66,7 +70,11 @@
               },
               {
                 "putfield": {
-                  "index": 9
+                  "field": {
+                    "class": "Example",
+                    "name": "l",
+                    "descriptor": "J"
+                  }
                 }
               },
               "aload_0",
@@ -77,12 +85,20 @@
               },
               {
                 "putfield": {
-                  "index": 16
+                  "field": {
+                    "class": "Example",
+                    "name": "f",
+                    "descriptor": "F"
+                  }
                 }
               },
               {
                 "getstatic": {
-                  "index": 20
+                  "field": {
+                    "class": "java/lang/System",
+                    "name": "err",
+                    "descriptor": "Ljava/io/PrintStream;"
+                  }
                 }
               },
               {
@@ -92,7 +108,11 @@
               },
               {
                 "invokevirtual": {
-                  "index": 28
+                  "method": {
+                    "class": "java/io/PrintStream",
+                    "name": "println",
+                    "descriptor": "(Ljava/lang/String;)V"
+                  }
                 }
               },
               "return"
@@ -159,7 +179,11 @@
               "dup",
               {
                 "invokespecial": {
-                  "index": 34
+                  "method": {
+                    "class": "Example",
+                    "name": "<init>",
+                    "descriptor": "()V"
+                  }
                 }
               },
               "astore_0",
@@ -215,7 +239,11 @@
               "iload_3",
               {
                 "putfield": {
-                  "index": 35
+                  "field": {
+                    "class": "Example",
+                    "name": "sum",
+                    "descriptor": "I"
+                  }
                 }
               },
               "iload_3",
@@ -323,20 +351,32 @@
               "aload_0",
               {
                 "getfield": {
-                  "index": 16
+                  "field": {
+                    "class": "Example",
+                    "name": "f",
+                    "descriptor": "F"
+                  }
                 }
               },
               "f2d",
               "dadd",
               {
                 "invokestatic": {
-                  "index": 43
+                  "method": {
+                    "class": "java/lang/Double",
+                    "name": "valueOf",
+                    "descriptor": "(D)Ljava/lang/Double;"
+                  }
                 }
               },
               "aastore",
               {
                 "invokestatic": {
-                  "index": 49
+                  "method": {
+                    "class": "java/lang/String",
+                    "name": "format",
+                    "descriptor": "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/String;"
+                  }
                 }
               },
               "areturn"
