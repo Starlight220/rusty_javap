@@ -103,7 +103,7 @@ use serde::{Deserialize, Serialize};
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ClassRef(String);
+pub struct ClassRef(pub String);
 impl ClassRef {
     fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<ClassRef, String> {
         Ok(Self(constant_pool.get_class_name(bytes.take()?)?))
@@ -122,7 +122,7 @@ impl ClassRef {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct FieldRef { class: ClassRef, name: String, descriptor: String }
+pub struct FieldRef { pub class: ClassRef, pub name: String, pub descriptor: String }
 impl FieldRef {
     fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<Self, String> {
         let field_index:  w2 = bytes.take()?;
@@ -163,7 +163,7 @@ impl FieldRef {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MethodRef { class: ClassRef, name: String, descriptor: String }
+pub struct MethodRef { pub class: ClassRef, pub name: String, pub descriptor: String }
 impl MethodRef {
     fn decode(bytes: &mut ByteReader, constant_pool: &ConstantPool) -> Result<Self, String> {
         let method_index:  w2 = bytes.take()?;
