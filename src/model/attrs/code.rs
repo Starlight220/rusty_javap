@@ -404,13 +404,24 @@ opcodes! {
     fload_3 = 0x25;
     fmul = 0x6a;
     fneg = 0x76;
-    // TODO more
-
+    frem = 0x72;
+    freturn = 0xae;
+    fstore = 0x38 {index: w1};
+    fstore_0 = 0x43;
+    fstore_1 = 0x44;
+    fstore_2 = 0x45;
+    fstore_3 = 0x46;
+    fsub = 0x66;
     getfield = 0xb4 {field: FieldRef}; // Constant pool index of fieldref
     getstatic = 0xb2 {field: FieldRef}; // Constant pool index of fieldref
     goto = 0xa7 {branch: w2};
     goto_w = 0xc8 {branch: w4};
-    // TODO more
+    i2b = 0x91;
+    i2c = 0x92;
+    i2d = 0x87;
+    i2f = 0x86;
+    i2l = 0x85;
+    i2s = 0x93;
     iadd = 0x60;
     iaload = 0x2e;
     iand = 0x7e;
@@ -423,8 +434,15 @@ opcodes! {
     iconst_4 = 0x7;
     iconst_5 = 0x8;
     idiv = 0x6c;
-    // TODO more
 
+    if_acmpeq = 0xa5;
+    if_acmpne = 0xa6;
+    if_icmpeq = 0x9f;
+    if_icmpne = 0xa0;
+    if_icmplt = 0xa1;
+    if_icmpge = 0xa2;
+    if_icmpgt = 0xa3;
+    if_icmple = 0xa4;
     ifeq = 0x99 {branch: w2};
     ifne = 0x9a {branch: w2};
     iflt = 0x9b {branch: w2};
@@ -459,10 +477,25 @@ opcodes! {
     istore_3 = 0x3e;
     isub = 0x64;
     iushr = 0x7c;
-    // TODO more
+    ixor = 0x82;
+    jsr = 0xa8 {branch: w2};
+    jsr_w = 0xc9 {branch: w4};
+    l2d = 0x8a;
+    l2f = 0x89;
+    l2i = 0x88;
+    ladd = 0x61;
+    laload = 0x2f;
+    land = 0x7f;
+    lastore = 0x50;
+    lcmp = 0x94;
+    lconst_0 = 0x9;
+    lconst_1 = 0xa;
 
+    ldc = 0x12 {index: w1}; // Constant pool index of constant
+    ldc_w = 0x13 {index: w2}; // Constant pool index of constant
+    ldc2_w = 0x14 {index: w2}; // Constant pool index of constant
 
-
+    ldiv = 0x6d;
     lload = 0x16 {index: w1};
     lload_0 = 0x1e;
     lload_1 = 0x1f;
@@ -470,27 +503,43 @@ opcodes! {
     lload_3 = 0x21;
     lmul = 0x69;
     lneg = 0x75;
-    // TODO more
 
-    jsr = 0xa8 {branch: w2};
-    jsr_w = 0xc9 {branch: w4};
-    // TODO more
+    // TODO lookupswitch = 0xab
+    lor = 0x81;
+    lrem = 0x71;
+    lreturn = 0xad;
+    lshl = 0x79;
+    lshr = 0x7b;
+    lstore = 0x37 {index: w1};
+    lstore_0 = 0x3f;
+    lstore_1 = 0x40;
+    lstore_2 = 0x41;
+    lstore_3 = 0x42;
+    lsub = 0x65;
+    lushr = 0x7d;
+    lxor = 0x83;
 
-    ldc = 0x12 {index: w1}; // Constant pool index of constant
-    ldc_w = 0x13 {index: w2}; // Constant pool index of constant
-    ldc2_w = 0x14 {index: w2}; // Constant pool index of constant
-    // TODO more
+    monitorenter = 0xc2;
+    monitorexit = 0xc3;
 
+    multianewarray = 0xc5 {class: ClassRef, dimensions: w1};
     new = 0xbb {class: ClassRef}; // Constant pool index of class
-    // TODO more
-
+    // (https://docs.oracle.com/javase/specs/jvms/se12/html/jvms-6.html#jvms-6.5.newarray)
+    newarray = 0xbc {atype: w1}; // TODO: create enum
     nop = 0x00;
     pop = 0x57;
     pop2 = 0x58;
     putfield = 0xb5 {field: FieldRef}; // Constant pool index of field ref
     putstatic = 0xb3 {field: FieldRef}; // Constant pool index of field ref
-    // TODO more
 
     ret = 0xa9;
     r#return = 0xb1;
+
+    saload = 0x35;
+    sastore = 0x56;
+    sipush = 0x11 {short: w2};
+    swap = 0x5f;
+
+    // TODO tableswitch = 0xaa;
+    // TODO wide = 0xc4;
 }
